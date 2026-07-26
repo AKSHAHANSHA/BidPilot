@@ -12,10 +12,36 @@ from app.schemas.auth import (
     TokenResponse,
     UserRead,
 )
+from app.schemas.common import Page
+from app.schemas.company import (
+    CompanyProfileCreate,
+    CompanyProfileRead,
+    CompanyProfileUpdate,
+    CompletionRead,
+)
+from app.schemas.evidence import (
+    EvidenceCreate,
+    EvidenceExpiry,
+    EvidenceRead,
+    EvidenceUpdate,
+)
+from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 
 __all__ = [
+    "CompanyProfileCreate",
+    "CompanyProfileRead",
+    "CompanyProfileUpdate",
+    "CompletionRead",
+    "EvidenceCreate",
+    "EvidenceExpiry",
+    "EvidenceRead",
+    "EvidenceUpdate",
     "LoginRequest",
     "LogoutResponse",
+    "Page",
+    "ProjectCreate",
+    "ProjectRead",
+    "ProjectUpdate",
     "RegisterRequest",
     "SessionRead",
     "TokenResponse",

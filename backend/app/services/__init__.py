@@ -5,5 +5,6 @@ never commits: the request or job owns the transaction boundary.
 """
 
 from app.services.auth_service import AuthResult, AuthService, ClientContext
+from app.services.company_service import CompanyService, ExpiryView
 
-__all__ = ["AuthResult", "AuthService", "ClientContext"]
+__all__ = ["AuthResult", "AuthService", "ClientContext", "CompanyService", "ExpiryView"]

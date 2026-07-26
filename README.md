@@ -25,7 +25,7 @@ working until its verification commands have been run.
 |---|---|---|
 | 0 | Repository foundation, config, logging, error contract, health, migrations, CI | **Complete** |
 | 1 | Authentication, refresh rotation, rate limiting, ownership enforcement | **Complete** |
-| 2 | Company profile and evidence | Not started |
+| 2 | Company profile, evidence, and projects; derived expiry; profile completion | **Complete** |
 | 3 | Tender CRUD and PDF upload | Not started |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
@@ -177,6 +177,7 @@ serving traffic in an unknown state.
 | `REFRESH_COOKIE_SECURE`, `REFRESH_COOKIE_SAMESITE` | Leave unset to derive from `APP_ENV`: Lax over http locally, `None` + `Secure` when deployed. |
 | `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS` | Fixed-window throttle per account and hashed IP. |
 | `UPLOAD_DIR`, `MAX_UPLOAD_BYTES`, `MAX_PDF_PAGES` | Upload bounds; paths are resolved absolute and generated server-side. |
+| `EVIDENCE_EXPIRING_SOON_DAYS` | "Expiring soon" window, default 60. The state itself is always derived. |
 | `OPENAI_API_KEY`, `OPENAI_MODEL` | Required from Phase 6. Never sent to the browser. |
 | `PROMPT_VERSION`, `SCORING_VERSION` | Recorded on every analysis so results are reproducible. |
 
@@ -242,6 +243,79 @@ become a login outage.
 curl -s -X POST http://localhost:8000/api/v1/auth/register -H 'Content-Type: application/json' -d '{"email":"coordinator@fm-demo.ae","password":"a-long-demo-passphrase-1","display_name":"Tender Coordinator"}'
 ```
 
+## Company knowledge base
+
+The record that tender requirements are evaluated against from Phase 8 onward.
+
+```text
+POST   /api/v1/company                        create the profile (one per account)
+GET    /api/v1/company                        read it, with a fresh completion breakdown
+PATCH  /api/v1/company                        partial update
+DELETE /api/v1/company                        delete it, cascading to evidence and projects
+
+GET    /api/v1/company/evidence               filter + paginate
+POST   /api/v1/company/evidence
+GET    /api/v1/company/evidence/{id}
+PATCH  /api/v1/company/evidence/{id}
+DELETE /api/v1/company/evidence/{id}
+
+GET    /api/v1/company/projects               filter + paginate
+POST   /api/v1/company/projects
+GET    /api/v1/company/projects/{id}
+PATCH  /api/v1/company/projects/{id}
+DELETE /api/v1/company/projects/{id}
+```
+
+Routes nest under `/company` to match `docs/04_API_AND_DATA_MODEL.md` §3; the profile is a
+singleton per account, and evidence and projects belong to it.
+
+**One profile per account** is a database unique constraint on `owner_user_id`, so a concurrent
+double-POST cannot create two. **Evidence and projects carry a composite foreign key** on
+`(company_profile_id, owner_user_id)`, which makes attaching a record to another user's profile
+unrepresentable rather than merely rejected. The profile ID is never read from a request body.
+
+**Projects are a separate entity**, not an evidence subtype: Phase 8 must answer "three similar
+projects above AED 2M in Dubai", which needs typed and indexed columns for value, dates,
+location, and services delivered.
+
+**Derived expiry state** is calculated on every read and never stored, because "expiring soon"
+goes stale with the passage of time alone:
+
+| State | Meaning |
+|---|---|
+| `expired` | Expiry date in the past — true regardless of verification |
+| `unverified` | Not user-verified (or rejected), so its dates are not relied on |
+| `no_expiry` | Verified with no expiry date |
+| `expiring_soon` | Verified and within `EVIDENCE_EXPIRING_SOON_DAYS` (default 60) |
+| `active` | Verified and comfortably in date |
+
+Precedence runs top to bottom. The same rules exist twice — once in Python for a loaded record,
+once as SQL predicates for filtering — and an integration test asserts the two agree across a
+full matrix of dates and statuses, so a list and a detail view can never disagree.
+
+**Profile completion** is deterministic Python in a versioned module, never the frontend and
+never a model. Weights total exactly 100, so the bound is arithmetic rather than clamping:
+78 for the required core (text fields must be substantive — a one-word description earns
+nothing), 10 for list depth, 12 for the optional commercial fields. The response includes the
+full component breakdown and a `missing` list ordered heaviest-first, so the UI can explain the
+number instead of just displaying it.
+
+Filter evidence by `category`, `verification_status`, `expiry_state`, `search`, and `tag`;
+projects by `status`, `search`, and `service`. Both use offset pagination with a total count.
+
+### Demo data
+
+```bash
+python scripts/seed_demo.py
+```
+
+Loads one fictional Dubai facilities-management company — trade licence, ISO 9001, two insurance
+policies, financial statements, staff CVs, equipment, an ISO 14001 gap recorded as unverified,
+and two projects — through the same services the API uses, so seeded rows obey every validator.
+Dates are stored as offsets from today, so the insurance policy always lands in `expiring_soon`
+whenever the demo runs. Nothing in it is real: no actual company, person, licence number, or
+contact detail. `--reset` removes it.
+
 ---
 
 ## Testing
@@ -277,8 +351,16 @@ responses — CI never depends on paid API calls.
 
 ## Known limitations
 
-- Phases 2–12 are not built yet: no company profile, tenders, uploads, extraction, worker,
-  scoring, or frontend.
+- Phases 3–12 are not built yet: no tenders, uploads, extraction, worker, scoring, or frontend.
+- No file upload on evidence. The response carries a contract-stable `attachment: null`, but no
+  storage columns exist — adding them in Phase 3 is additive, so inventing them now would be
+  speculation.
+- Extending a controlled vocabulary (evidence category, emirate, project status) needs a small
+  migration, because each is also a database check constraint. Deliberate: a typo'd category
+  would silently hide evidence from every filter.
+- `profile_completion_percentage` is persisted for future sorting but reads always serve a
+  freshly calculated score, so a stored value left stale by an algorithm change is never
+  returned. A backfill command is future work.
 - No password reset. A forgotten password requires database access; deliberately postponed
   because it needs email delivery that a portfolio demo does not have.
 - `request.client.host` is the direct peer, so behind a proxy the recorded IP is the proxy's.

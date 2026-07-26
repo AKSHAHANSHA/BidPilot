@@ -42,32 +42,55 @@ Use:
 
 ### CompanyProfile
 
-- `id`
-- `owner_user_id`
-- `legal_name`
-- `trade_license_activities` JSON
-- `emirate`
-- `years_in_business`
-- `employee_count`
-- `services` JSON
-- `preferred_contract_min`
-- `preferred_contract_max`
-- `notes`
+**Implemented in Phase 2** (migration `0003`). One per user, enforced by
+`UNIQUE (owner_user_id)`.
+
+- `id`, `owner_user_id` → `users.id` `ON DELETE CASCADE`
+- `legal_name`, `trading_name` nullable, `description`, `industry`
+- `emirate` (check constraint, seven values), `country`
+- `year_established`, `employee_count`, `years_of_experience`
+- `trade_licence_number`, `trade_licence_expiry`, `licence_activities` `text[]`
+- `website` nullable, `contact_email`, `contact_phone` nullable
+- `annual_revenue_range` nullable (check constraint), `preferred_contract_value_min` /
+  `_max` `numeric(14,2)` nullable
+- `service_categories` `text[]`, `geographic_coverage` `text[]` — both non-empty
+- `profile_completion_percentage`, `completion_version` — recalculated on every write; reads
+  serve a freshly calculated score
+- timestamps
+- `UNIQUE (id, owner_user_id)` exists only to support the children's composite foreign key
+
+### CompanyEvidence
+
+**Implemented in Phase 2.** Named `company_evidence`, not `evidence_items`.
+
+- `id`, `owner_user_id`, `company_profile_id`
+- `FOREIGN KEY (company_profile_id, owner_user_id)` → `company_profiles (id, owner_user_id)`
+  `ON DELETE CASCADE` — this is what makes cross-user attachment unrepresentable
+- `title`, `category` (check constraint, twelve values), `issuing_organisation` nullable,
+  `reference_number` nullable, `description`
+- `issue_date` nullable, `expiry_date` nullable, `CHECK (issue_date <= expiry_date)`
+- `verification_status` (check constraint: `unverified` | `verified` | `rejected`),
+  `verification_notes` nullable
+- `tags` `text[]`, normalized to lower case, GIN indexed
 - timestamps
 
-### EvidenceItem
+Expiry state is **not a column**. It is derived per request from `expiry_date` and
+`verification_status` — see `docs/08` D29. File-storage columns arrive with Phase 3; the API
+already returns a stable `attachment: null`.
 
-- `id`
-- `company_profile_id`
-- `type`
-- `name`
-- `description`
-- `value_json`
-- `valid_from`
-- `valid_until`
-- `source_document_id` nullable
-- `source_page` nullable
-- `verified_by_user`
+### CompanyProject
+
+**Implemented in Phase 2.** A separate entity rather than an evidence subtype, so contract
+value, dates, location, and delivered services are filterable columns (`docs/08` D26).
+
+- `id`, `owner_user_id`, `company_profile_id` with the same composite foreign key
+- `client_name`, `project_title`, `industry`, `description`
+- `contract_value` `numeric(14,2)` nullable, `currency`
+- `start_date`, `end_date` nullable, `status` (`completed` | `current`)
+- `CHECK (start_date <= end_date)` and `CHECK` that a `current` project has no end date while a
+  `completed` one must have one
+- `location`, `services_delivered` `text[]` non-empty and GIN indexed, `outcome` nullable
+- `client_reference_available`, `is_confidential`
 - timestamps
 
 ### Tender
@@ -235,14 +258,31 @@ POST   /auth/reset-password
 
 ### Company
 
+As implemented in Phase 2. `PATCH` replaces the originally planned `PUT` because updates are
+partial, and `POST`/`DELETE` on the profile plus the full project set were added.
+
 ```text
+POST   /company
 GET    /company
-PUT    /company
-GET    /company/evidence
+PATCH  /company
+DELETE /company                       cascades to evidence and projects
+
+GET    /company/evidence              ?category= &verification_status= &expiry_state=
+                                      &search= &tag= &limit= &offset=
 POST   /company/evidence
+GET    /company/evidence/{evidence_id}
 PATCH  /company/evidence/{evidence_id}
 DELETE /company/evidence/{evidence_id}
+
+GET    /company/projects              ?status= &search= &service= &limit= &offset=
+POST   /company/projects
+GET    /company/projects/{project_id}
+PATCH  /company/projects/{project_id}
+DELETE /company/projects/{project_id}
 ```
+
+List responses use an offset-pagination envelope: `{ items, total, limit, offset }`, where
+`total` ignores `limit`/`offset`.
 
 ### Tenders
 

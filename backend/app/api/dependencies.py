@@ -20,9 +20,15 @@ from app.core.database import get_session
 from app.core.logging import get_logger, user_id_var
 from app.core.security import TokenError, decode_access_token
 from app.models.user import User
+from app.repositories.company_repository import (
+    CompanyEvidenceRepository,
+    CompanyProfileRepository,
+    CompanyProjectRepository,
+)
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService, ClientContext
+from app.services.company_service import CompanyService
 
 logger = get_logger(__name__)
 
@@ -64,6 +70,18 @@ def get_auth_service(session: SessionDep, settings: SettingsDep) -> AuthService:
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+
+def get_company_service(session: SessionDep, settings: SettingsDep) -> CompanyService:
+    return CompanyService(
+        profiles=CompanyProfileRepository(session),
+        evidence=CompanyEvidenceRepository(session),
+        projects=CompanyProjectRepository(session),
+        settings=settings,
+    )
+
+
+CompanyServiceDep = Annotated[CompanyService, Depends(get_company_service)]
 
 
 async def get_current_user(

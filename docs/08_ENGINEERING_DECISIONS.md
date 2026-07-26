@@ -248,7 +248,120 @@ normally).
 Pure policy — hashing, token signing, password rules, the ownership contract — stays in unit
 tests so `make check` still gates every commit without Docker.
 
-## D25 — Postponed deliberately
+## D26 — Projects are a separate entity, not an evidence subtype
+
+Phase 8 has to answer questions like *"three similar projects above AED 2M in Dubai within the
+last five years"*. As `company_projects` that is a query over typed, indexed columns. As a
+subtype of `company_evidence` it would be either JSONB or eleven columns that are NULL for every
+other category, and deterministic matching — which runs before any semantic matching per
+`docs/03` §9 — needs real numeric and date predicates.
+
+`previous_project` remains a valid evidence *category*: a completion certificate is a document
+about a project, while a project row is the structured claim. Linking the two with a nullable
+foreign key later is additive, so it is not built now.
+
+## D27 — Composite foreign keys make cross-user attachment unrepresentable
+
+`company_profiles` carries a redundant-looking `UNIQUE (id, owner_user_id)` purely so children
+can declare:
+
+```sql
+FOREIGN KEY (company_profile_id, owner_user_id)
+    REFERENCES company_profiles (id, owner_user_id) ON DELETE CASCADE
+```
+
+"You cannot attach evidence to another user's profile" therefore becomes a database guarantee
+rather than a check some future route, script, or migration might forget. `owner_user_id` is
+denormalized onto children so the Phase 1 `OwnedRepository` predicate works without a join, and
+the composite key is what keeps that denormalized value honest.
+
+Ownership failures still return **404, not 403** (D7): a 403 confirms the row exists.
+
+## D28 — Three array columns, and why the rest are tables
+
+`licence_activities`, `service_categories`, and `geographic_coverage` are `text[]`. Each is an
+unordered list of short labels with no attributes of its own, queried only for containment
+("does this company cover Dubai?"), which a GIN index serves directly. A child table would add a
+join and a migration for no gain; JSONB would add nesting the data does not have.
+
+Everything with attributes is a real table. `tags` on evidence is also `text[]`, normalized to
+trimmed lower case on write so filtering by tag cannot miss records that differ only in case.
+
+Money is `numeric(14, 2)` throughout and `Decimal` end to end — contract values are compared
+against tender thresholds, where binary floating-point error is unacceptable. Project contract
+values carry an explicit `currency`, because a value without a unit cannot be compared at all.
+
+## D29 — Derived expiry state is never stored, and exists twice
+
+"Expiring soon" becomes wrong through the passage of time alone, with no write to trigger an
+update, so it is calculated on every read from the expiry date and verification status.
+
+Precedence, highest first: **expired** (a past date is a fact regardless of verification) →
+**unverified** (anything not `verified`, including `rejected`, so its dates are not worth
+interpreting) → **no_expiry** → **expiring_soon** → **active**.
+
+Filtering has to happen in SQL rather than by loading every row, which means the rules exist
+twice: `derive_expiry_state` for a loaded record and `expiry_state_filter` for a query. Two
+implementations of one rule is a standing invitation to drift, so an integration test asserts
+they agree across every combination of date position and status, and that the five states
+partition the rows exactly once. That test caught a real bug during development — the
+`expiring_soon` predicate initially also matched expired rows.
+
+## D30 — Profile completion depends only on the profile row
+
+Evidence and project counts were considered as inputs and rejected: a cross-entity score changes
+without the profile being written, which is the same staleness trap D29 avoids.
+
+Weights total exactly **100**, checked at import (a `raise`, not an `assert`, so `python -O`
+cannot skip it), and each rule contributes its whole weight or nothing. The 0–100 bound is
+arithmetic, not clamping. Groups: **core 78**, **depth 10**, **commercial 12**.
+
+Text fields must be substantive — a description under 40 characters earns nothing, because the
+score signals readiness rather than congratulating an empty shell. Validation and completion
+answer different questions: `"FM company"` is a legal value to store, so it is not a 422; it is
+just not worth scoring.
+
+The score is persisted for future sorting and filtering but **reads always serve a freshly
+calculated value**, so an algorithm change cannot surface a stale number. `completion_version` is
+stored alongside it.
+
+## D31 — Validation is split between Pydantic and check constraints, on purpose
+
+A check constraint must be immutable, so it cannot call `now()`. Anything time-relative — a year
+of establishment in the future, a project starting tomorrow — is enforced in the schema layer.
+Anything time-invariant — non-negative counts, `min <= max`, `issue_date <= expiry_date`,
+non-empty arrays, vocabulary membership — is enforced in the database as well, where no code path
+can bypass it.
+
+The project status/end-date rule needs all three layers: Pydantic for a clear 422 on a complete
+payload, the service for a `PATCH` that supplies only one side and must be judged against stored
+state, and a check constraint so no path can write a project that is simultaneously current and
+ended.
+
+## D32 — The `MissingGreenlet` timestamp bug
+
+`updated_at` uses a server-side `onupdate`, so SQLAlchemy leaves it **expired** after an UPDATE
+and reloads it lazily on next access. The response serializers are synchronous functions, and an
+implicit SELECT from a sync call stack cannot drive async IO — every `PATCH` route returned 500
+with `MissingGreenlet` instead of 200.
+
+Fixed with `__mapper_args__ = {"eager_defaults": True}` on `TimestampMixin`, so PostgreSQL
+returns the new timestamp via `RETURNING` in the same statement that wrote it. One round trip,
+no expired attributes, no lazy load.
+
+Found by the integration suite rather than in production, but only because the tests exercise a
+real `PATCH` over HTTP; a service-level test passed cleanly, since it never touched `updated_at`
+afterwards.
+
+## D33 — Route naming: `/company`, not `/company-profile`
+
+`docs/04_API_AND_DATA_MODEL.md` §3 already specified `/company` and `/company/evidence`. The
+singular collection path expresses a per-user singleton correctly, and evidence and projects
+genuinely belong to the profile, so they nest. `PATCH` supersedes that document's `PUT` because
+updates are partial. Offset pagination with a total count, not cursors: these lists are per-user
+and small, and the frontend wants a page count.
+
+## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage
 adapter, the Anthropic provider adapter, pgvector and semantic evidence retrieval, PDF

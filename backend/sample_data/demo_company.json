@@ -1,0 +1,217 @@
+{
+  "_note": "Entirely fictional. No real company, person, licence number, or contact detail appears here. Designed to produce a conditional-bid result in Phase 9: ISO 9001 valid, ISO 14001 absent, two similar projects where a tender typically asks for three, and bid-bond availability unknown.",
+  "user": {
+    "email": "demo@fm-demo.ae",
+    "password": "bidpilot-demo-passphrase-1",
+    "display_name": "Demo Tender Coordinator"
+  },
+  "profile": {
+    "legal_name": "Al Mirqab Integrated Facilities Management LLC",
+    "trading_name": "Al Mirqab FM",
+    "description": "A Dubai-based integrated facilities management provider delivering hard and soft FM services to commercial towers, retail centres, and light industrial sites across the northern emirates. Directly employed technical staff, no subcontracted cleaning.",
+    "industry": "Facilities Management",
+    "emirate": "dubai",
+    "country": "United Arab Emirates",
+    "year_established": 2011,
+    "employee_count": 84,
+    "years_of_experience": 14,
+    "trade_licence_number": "DED-000-DEMO-4471",
+    "trade_licence_expiry_offset_days": 210,
+    "licence_activities": [
+      "Building cleaning services",
+      "Electromechanical equipment installation and maintenance",
+      "Air conditioning systems maintenance",
+      "Pest control services",
+      "Landscaping and irrigation maintenance"
+    ],
+    "website": "https://almirqab-fm.example.ae",
+    "contact_email": "tenders@fm-demo.ae",
+    "contact_phone": "+971 4 000 0000",
+    "annual_revenue_range": "5m_to_20m_aed",
+    "preferred_contract_value_min": "500000.00",
+    "preferred_contract_value_max": "12000000.00",
+    "service_categories": [
+      "Hard FM",
+      "Soft FM",
+      "HVAC maintenance",
+      "Cleaning services",
+      "Pest control",
+      "Landscaping"
+    ],
+    "geographic_coverage": ["Dubai", "Sharjah", "Ajman", "Umm Al Quwain"]
+  },
+  "evidence": [
+    {
+      "title": "Dubai DED Trade Licence",
+      "category": "trade_licence",
+      "issuing_organisation": "Dubai Department of Economy and Tourism",
+      "reference_number": "DED-000-DEMO-4471",
+      "description": "Primary commercial licence covering building cleaning, electromechanical maintenance, HVAC, pest control, and landscaping activities.",
+      "issue_date_offset_days": -155,
+      "expiry_date_offset_days": 210,
+      "verification_status": "verified",
+      "tags": ["licence", "mandatory"]
+    },
+    {
+      "title": "ISO 9001:2015 Quality Management Certification",
+      "category": "certification",
+      "issuing_organisation": "Fictional Certification Bureau (demo)",
+      "reference_number": "FCB-QMS-DEMO-2024-118",
+      "description": "Quality management system certification covering FM service delivery, planned preventive maintenance, and client complaint handling.",
+      "issue_date_offset_days": -480,
+      "expiry_date_offset_days": 615,
+      "verification_status": "verified",
+      "tags": ["iso", "quality", "mandatory"]
+    },
+    {
+      "title": "Third-Party Liability Insurance",
+      "category": "insurance",
+      "issuing_organisation": "Fictional Gulf Insurance (demo)",
+      "reference_number": "FGI-TPL-DEMO-88214",
+      "description": "Third-party liability cover of AED 5,000,000 per occurrence, including cover for work carried out on client premises.",
+      "issue_date_offset_days": -320,
+      "expiry_date_offset_days": 45,
+      "verification_status": "verified",
+      "tags": ["insurance", "expiring"]
+    },
+    {
+      "title": "Workmen's Compensation Insurance",
+      "category": "insurance",
+      "issuing_organisation": "Fictional Gulf Insurance (demo)",
+      "reference_number": "FGI-WC-DEMO-88215",
+      "description": "Workmen's compensation cover for all 84 directly employed staff, including technical and cleaning teams.",
+      "issue_date_offset_days": -320,
+      "expiry_date_offset_days": 410,
+      "verification_status": "verified",
+      "tags": ["insurance"]
+    },
+    {
+      "title": "Audited Financial Statements FY2024",
+      "category": "financial_statement",
+      "issuing_organisation": "Fictional Audit Partners (demo)",
+      "reference_number": "FAP-AFS-DEMO-2024",
+      "description": "Audited statements showing turnover within the 5-20 million AED band and positive working capital.",
+      "issue_date_offset_days": -190,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["financial"]
+    },
+    {
+      "title": "Health, Safety and Environment Policy",
+      "category": "policy",
+      "issuing_organisation": null,
+      "reference_number": "HSE-POL-DEMO-07",
+      "description": "Internal HSE policy covering working at height, chemical handling, permit-to-work, and incident reporting.",
+      "issue_date_offset_days": -240,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["hse", "policy"]
+    },
+    {
+      "title": "Federal Tax Authority VAT Registration",
+      "category": "registration",
+      "issuing_organisation": "Fictional Tax Registry (demo)",
+      "reference_number": "TRN-DEMO-100000000000003",
+      "description": "VAT registration certificate for the trading entity.",
+      "issue_date_offset_days": -900,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["tax", "registration"]
+    },
+    {
+      "title": "Senior HVAC Technician CV - Staff Member A",
+      "category": "staff_cv",
+      "issuing_organisation": null,
+      "reference_number": null,
+      "description": "Fictional profile: twelve years of chiller and AHU maintenance experience across commercial towers. Named individuals are placeholders.",
+      "issue_date_offset_days": -60,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["staff", "hvac"]
+    },
+    {
+      "title": "Facilities Manager CV - Staff Member B",
+      "category": "staff_cv",
+      "issuing_organisation": null,
+      "reference_number": null,
+      "description": "Fictional profile: nine years managing multi-site FM contracts, including mobilisation and SLA reporting. Named individuals are placeholders.",
+      "issue_date_offset_days": -60,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["staff", "management"]
+    },
+    {
+      "title": "Ride-On Scrubber Dryer Fleet",
+      "category": "equipment_asset",
+      "issuing_organisation": null,
+      "reference_number": "ASSET-DEMO-SD-004",
+      "description": "Four ride-on scrubber dryers and eight single-disc machines owned outright, available for large retail floor areas.",
+      "issue_date_offset_days": -400,
+      "expiry_date_offset_days": null,
+      "verification_status": "verified",
+      "tags": ["equipment", "cleaning"]
+    },
+    {
+      "title": "ISO 14001 Environmental Management - Application In Progress",
+      "category": "certification",
+      "issuing_organisation": "Fictional Certification Bureau (demo)",
+      "reference_number": null,
+      "description": "Gap assessment completed; certification audit not yet scheduled. Recorded so that a tender requiring ISO 14001 produces an explainable gap rather than silence.",
+      "issue_date_offset_days": null,
+      "expiry_date_offset_days": null,
+      "verification_status": "unverified",
+      "tags": ["iso", "environment", "gap"]
+    },
+    {
+      "title": "Client Reference - Retail Centre Contract",
+      "category": "client_reference",
+      "issuing_organisation": "Fictional Retail Holdings (demo)",
+      "reference_number": null,
+      "description": "Reference letter confirming satisfactory soft FM delivery. Contact details withheld in demo data.",
+      "issue_date_offset_days": -120,
+      "expiry_date_offset_days": null,
+      "verification_status": "unverified",
+      "tags": ["reference"]
+    }
+  ],
+  "projects": [
+    {
+      "client_name": "Fictional Retail Holdings (demo)",
+      "project_title": "Integrated FM - Riverside Retail Centre",
+      "industry": "Retail",
+      "description": "Full soft and hard FM delivery across a 42,000 sqm retail centre: daily cleaning, HVAC planned preventive maintenance, pest control, and landscaping of external areas.",
+      "contract_value": "8400000.00",
+      "currency": "AED",
+      "start_date_offset_days": -1460,
+      "end_date_offset_days": -365,
+      "status": "completed",
+      "location": "Dubai",
+      "services_delivered": [
+        "Soft FM",
+        "Hard FM",
+        "HVAC maintenance",
+        "Pest control",
+        "Landscaping"
+      ],
+      "outcome": "Contract delivered to SLA for three consecutive years with 98 percent planned maintenance completion. Renewed once before the client restructured its FM model.",
+      "client_reference_available": true,
+      "is_confidential": false
+    },
+    {
+      "client_name": "Fictional Business Bay Tower Owners Association (demo)",
+      "project_title": "Hard FM - Commercial Tower MEP Maintenance",
+      "industry": "Commercial Real Estate",
+      "description": "Planned and reactive MEP maintenance for a 31-storey commercial tower, covering chillers, AHUs, pumps, and life-safety systems, with a permanent on-site technical team.",
+      "contract_value": "3150000.00",
+      "currency": "AED",
+      "start_date_offset_days": -700,
+      "end_date_offset_days": null,
+      "status": "current",
+      "location": "Dubai",
+      "services_delivered": ["Hard FM", "HVAC maintenance", "Electromechanical maintenance"],
+      "outcome": "Ongoing. Unplanned downtime reduced in the first year following a revised PPM schedule.",
+      "client_reference_available": false,
+      "is_confidential": true
+    }
+  ]
+}

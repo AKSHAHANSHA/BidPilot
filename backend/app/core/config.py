@@ -83,6 +83,11 @@ class Settings(BaseSettings):
     refresh_cookie_secure: bool | None = None
     refresh_cookie_samesite: Literal["lax", "strict", "none"] | None = None
 
+    # --- Company evidence ----------------------------------------------------------
+    #: How far ahead a certificate counts as "expiring soon". Configurable because tender
+    #: preparation windows vary; 60 days is long enough to renew a UAE trade licence.
+    evidence_expiring_soon_days: Annotated[int, Field(ge=1, le=730)] = 60
+
     # --- Rate limiting -------------------------------------------------------------
     login_max_attempts: Annotated[int, Field(ge=1, le=1000)] = 10
     login_window_seconds: Annotated[int, Field(ge=10, le=86400)] = 300
