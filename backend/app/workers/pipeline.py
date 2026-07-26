@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.ai.cost import estimate_cost
 from app.ai.extraction import (
@@ -29,6 +30,7 @@ from app.ai.extraction import (
 from app.ai.providers.base import LLMProvider, LLMProviderError
 from app.core.logging import get_logger, user_id_var
 from app.documents.extraction import MIN_TEXTUAL_PAGE_RATIO
+from app.domain.citation import verify_quote
 from app.domain.enums import (
     AnalysisErrorCode,
     AnalysisStage,
@@ -218,14 +220,73 @@ async def stage_extracting_requirements(ctx: PipelineContext) -> None:
     )
 
 
-#: Ordered pipeline. Phases 7-9 insert citation verification, matching, risks, scoring, and
-#: report generation between requirement extraction and COMPLETED.
+async def stage_verifying_citations(ctx: PipelineContext) -> None:
+    """Verify every citation's quote against its cited page.
+
+    A requirement is canonical only if at least one of its citations verifies (`docs/03` §6).
+    "Not found" rejects the citation — it never fabricates absence. Verification is pure text
+    matching over already-extracted pages, so no provider call is needed here.
+    """
+    await _advance(
+        ctx, AnalysisStage.VERIFYING_CITATIONS, "Verifying citations against source pages."
+    )
+    assert ctx.pages is not None  # noqa: S101
+    page_text = {p.page_number: p.text for p in ctx.pages}
+
+    requirements = (
+        (
+            await ctx.session.execute(
+                select(Requirement)
+                .where(Requirement.analysis_id == ctx.analysis.id)
+                .options(selectinload(Requirement.citations))
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    verified_count = 0
+    rejected_count = 0
+    for requirement in requirements:
+        any_verified = False
+        for citation in requirement.citations:
+            text = page_text.get(citation.page_number, "")
+            result = verify_quote(quote=citation.source_quote, page_text=text)
+            citation.verified = result.verified
+            citation.match_method = result.method.value
+            citation.match_score = result.score
+            if result.verified:
+                any_verified = True
+        # Only a requirement with at least one verified citation is treated as canonical.
+        requirement.citation_verified = any_verified
+        if any_verified:
+            verified_count += 1
+        else:
+            rejected_count += 1
+
+    ctx.analysis.summary = (
+        f"{verified_count} of {len(requirements)} requirements have a verified citation; "
+        f"{rejected_count} could not be verified against the source and are not canonical."
+    )
+    logger.info(
+        "citations_verified",
+        extra={
+            "analysis_id": str(ctx.analysis.id),
+            "verified": verified_count,
+            "rejected": rejected_count,
+        },
+    )
+
+
+#: Ordered pipeline. Phases 8-9 insert matching, risks, scoring, and report generation between
+#: citation verification and COMPLETED.
 PIPELINE: tuple[tuple[AnalysisStage, StageHandler], ...] = (
     (AnalysisStage.VALIDATING, stage_validating),
     (AnalysisStage.EXTRACTING_TEXT, stage_extracting_text),
     (AnalysisStage.ASSESSING_QUALITY, stage_assessing_quality),
     (AnalysisStage.EXTRACTING_METADATA, stage_extracting_metadata),
     (AnalysisStage.EXTRACTING_REQUIREMENTS, stage_extracting_requirements),
+    (AnalysisStage.VERIFYING_CITATIONS, stage_verifying_citations),
 )
 
 

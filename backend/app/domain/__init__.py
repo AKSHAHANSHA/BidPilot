@@ -5,6 +5,11 @@ profile completion, and (from Phase 9) calculating readiness all live in this la
 because they must be repeatable and explainable rather than convenient.
 """
 
+from app.domain.citation import (
+    FUZZY_THRESHOLD,
+    VerificationResult,
+    verify_quote,
+)
 from app.domain.completion import (
     COMPLETION_VERSION,
     CompletionResult,
@@ -22,15 +27,18 @@ from app.domain.expiry import days_until_expiry, derive_expiry_state, expiry_sta
 
 __all__ = [
     "COMPLETION_VERSION",
+    "FUZZY_THRESHOLD",
     "CompletionResult",
     "Emirate",
     "EvidenceCategory",
     "ExpiryState",
     "ProjectStatus",
     "RevenueRange",
+    "VerificationResult",
     "VerificationStatus",
     "calculate_completion",
     "days_until_expiry",
     "derive_expiry_state",
     "expiry_state_filter",
+    "verify_quote",
 ]

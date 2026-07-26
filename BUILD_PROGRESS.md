@@ -15,7 +15,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | Complete |
 | 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | Complete |
 | 6 | LLM adapter, structured extraction, prompts, token/cost, requirements API | Complete |
-| 7 | Citation verification | Not started |
+| 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | Complete |
 | 8 | Evidence matching and risks | Not started |
 | 9 | Readiness scoring and report | Not started |
 | 10 | Frontend | Not started |
@@ -405,8 +405,38 @@ GET /api/v1/requirements/{id}            one requirement with its citations
 
 ---
 
-## Phase 7 — Citation verification (next)
+## Phase 7 — Citation verification
 
-Not started. Exact + normalized quote matching against the cited page, bounded fuzzy fallback,
-one correction retry, and rejection of unsupported material claims. Flips `citation_verified`
-and populates `match_method`/`match_score`.
+**Complete.** A deterministic verifier (`app/domain/citation.py`) checks each citation's quote
+against its cited page in three tiers — exact, normalized, bounded fuzzy (≥0.90, stdlib
+`difflib`) — and a `verifying_citations` pipeline stage flips `citation_verified` and populates
+`match_method`/`match_score`. A requirement is canonical only with at least one verified
+citation; unsupported quotes are rejected, never fabricated into absence (D46).
+
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (83 files), **236 unit/API tests** |
+| `./make.ps1 test-integration` | **202 passed** |
+| `./make.ps1 openapi` | 26 paths (no new endpoints; verification is a pipeline stage) |
+
+**Totals: 438 tests — 236 unit/API, 202 integration.** Exit test met: no canonical requirement
+has an invalid citation; a hallucinated quote is excluded from the canonical set.
+
+### Note
+
+- No provider call in this phase — verification is pure text matching, so it needs no key and
+  is fully covered by the automated suite.
+- The "one correction retry" from the spec (re-ask the model for a valid quote) is deferred:
+  the deterministic three-tier match already resolves typographic and OCR drift, and a
+  correction round-trip adds provider cost for marginal recall. Recorded as a possible future
+  refinement rather than built speculatively.
+
+---
+
+## Phase 8 — Evidence matching and risks (next)
+
+Not started. Deterministic evidence matching first (exact certifications, dates, geography,
+numeric thresholds), semantic assistance second; project matching; risk-clause extraction with
+citations; confidence and human-review states.

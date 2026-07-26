@@ -149,32 +149,32 @@ def make_pdf(*page_texts: str) -> bytes:
     return bytes(content)
 
 
-def requirement_batch_json(count: int = 12, *, source_page: int = 1) -> str:
+def requirement_batch_json(count: int = 12) -> str:
     """A valid RequirementBatch payload with `count` requirements, for the mock provider.
 
-    Quotes are phrases that appear in the DOC fixture pages so Phase 7 verification will pass.
+    Quotes are verbatim phrases from the standard two-page DOC fixture, each cited to the page
+    it actually appears on, so Phase 7 verification passes for all of them.
     """
     import json
 
-    quotes = [
-        "The bidder shall hold a valid UAE trade licence",
-        "maintain ISO 9001 certification",
-        "Liquidated damages of one percent per week",
+    # (quote, page it appears on in the DOC fixture, category, obligation)
+    specs = [
+        ("The bidder shall hold a valid UAE trade licence", 1, "legal_registration", "mandatory"),
+        ("maintain ISO 9001 certification", 1, "certification", "mandatory"),
+        ("Liquidated damages of one percent per week", 2, "contractual", "uncertain"),
     ]
-    categories = ["legal_registration", "certification", "contractual"]
-    obligations = ["mandatory", "mandatory", "uncertain"]
     reqs = []
     for i in range(count):
-        j = i % len(quotes)
+        quote, page, category, obligation = specs[i % len(specs)]
         reqs.append(
             {
-                "original_text": f"Requirement {i + 1}: {quotes[j]}.",
+                "original_text": f"Requirement {i + 1}: {quote}.",
                 "normalized_text": f"The bidder must satisfy requirement {i + 1}.",
-                "category": categories[j],
-                "obligation": obligations[j],
+                "category": category,
+                "obligation": obligation,
                 "expected_evidence": ["trade licence", "certificate"],
-                "source_page": source_page,
-                "source_quote": quotes[j],
+                "source_page": page,
+                "source_quote": quote,
                 "confidence": 0.9,
             }
         )

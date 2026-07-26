@@ -493,6 +493,25 @@ A re-run first clears its own requirements and metadata (`_reset_findings`), so 
 idempotent — re-inserting the one-per-analysis metadata row or a requirement would otherwise
 violate a unique constraint and fail the run for the wrong reason. Found by the retry test.
 
+## D46 — Citation verification is deterministic text matching
+
+Verification (`app/domain/citation.py`) is pure Python over the already-extracted page text —
+no provider call — so it is deterministic and directly testable. Three tiers, tried in order:
+exact substring, normalized substring (same normalizer that produced `normalized_text`, plus
+case-folding, absorbing curly quotes/dashes/whitespace), and a bounded fuzzy fallback accepted
+only at or above 0.90. The fuzzy step aligns a needle-sized window to the longest common block
+rather than sliding a fixed window, so a one-character OCR drift still scores near 1.0 while an
+unrelated quote is rejected. Quotes shorter than 25 chars skip fuzzy entirely — short strings
+match too much.
+
+A requirement is canonical (`citation_verified=True`) only if at least one of its citations
+verifies. "Not found" rejects the citation; it never fabricates absence (`docs/03` §6). The
+integration exit test asserts the core guarantee: no canonical requirement carries an invalid
+citation, and a deliberately hallucinated quote is excluded from the canonical set.
+
+`difflib.SequenceMatcher` (stdlib) does the fuzzy work — no new dependency for a bounded,
+explainable similarity check.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

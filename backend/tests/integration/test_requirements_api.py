@@ -54,12 +54,13 @@ async def test_at_least_ten_requirements_are_extracted(client: AsyncClient) -> N
     assert first["original_text"]
     assert first["category"]
     assert first["obligation"] in {"mandatory", "optional", "uncertain"}
-    # Citations are persisted but not yet verified (Phase 7 verifies).
+    # Citations are persisted with a real source page. The pipeline includes Phase 7
+    # verification, and these quotes are verbatim from the pages, so they verify.
     assert first["citations"]
     assert first["citations"][0]["page_number"] >= 1
-    assert first["citation_verified"] is False
-    assert first["citations"][0]["verified"] is False
-    assert first["citations"][0]["match_method"] == "unverified"
+    assert first["citation_verified"] is True
+    assert first["citations"][0]["verified"] is True
+    assert first["citations"][0]["match_method"] in {"exact", "normalized", "fuzzy"}
 
 
 async def test_token_and_cost_are_recorded(client: AsyncClient) -> None:
@@ -86,8 +87,9 @@ async def test_requirement_filters(client: AsyncClient) -> None:
 
     assert await total("category=certification") >= 1
     assert await total("obligation=mandatory") >= 1
-    assert await total("citation_verified=false") >= 10
-    assert await total("citation_verified=true") == 0
+    # All fixture quotes are verbatim from their cited pages, so all verify.
+    assert await total("citation_verified=true") >= 10
+    assert await total("citation_verified=false") == 0
 
 
 async def test_get_single_requirement_with_citations(client: AsyncClient) -> None:
