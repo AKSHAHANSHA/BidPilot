@@ -11,7 +11,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 0 | Repository foundation, config, logging, error contract, health, migrations, CI | Complete |
 | 1 | Authentication, refresh rotation, rate limiting, ownership enforcement | Complete |
 | 2 | Company profile, evidence, and projects | Complete |
-| 3 | Tender CRUD and PDF upload | Not started |
+| 3 | Tender CRUD and PDF upload | Complete |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |
@@ -244,12 +244,43 @@ documentation updated.
 
 ---
 
-## Phase 3 — Tender and upload (next)
+## Phase 3 — Tender CRUD and secure PDF upload
 
-Not started. Scope from the roadmap: tender CRUD, PDF upload with MIME, extension, size, and
-SHA-256 validation, a local storage adapter behind an interface, document records, and duplicate
-detection. Exit test: a valid PDF is stored and an invalid file is rejected with problem details.
+**Complete.** Tenders with filtered/paginated CRUD; documents uploaded as multipart PDFs,
+accepted by magic bytes rather than filename or Content-Type, size-bounded, SHA-256 hashed,
+stored under server-generated keys `{user_id}/{tender_id}/{uuid}.pdf` behind a `StorageBackend`
+protocol (local adapter with traversal defence). Per-tender duplicate detection via a
+`(tender_id, sha256)` unique constraint; the same composite-FK ownership pattern as Phase 2
+(migration `0004`). Compensation: file-then-flush with delete-on-failure; delete row-first with
+best-effort file cleanup (D35, D36).
 
-This is also where the roadmap's literal Phase 1 exit test lands — "User A cannot access User B's
-tender" — re-asserting the ownership invariant on tenders using the same `OwnedRepository` and
-composite-foreign-key pattern established in Phases 1 and 2.
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (54 files), **205 unit/API tests** |
+| `./make.ps1 test-integration` | **163 passed** against real PostgreSQL + filesystem |
+| `alembic upgrade head` / `alembic check` | head `0004`, no drift; single-step downgrade removes only Phase 3 tables |
+| `./make.ps1 openapi` | 18 paths |
+| Live smoke test | login → create tender → upload with hostile `../../` filename (sanitized, stored under generated key) → duplicate 409 → fake PDF 422 → delete tender removed file from disk |
+
+**Totals: 368 tests — 205 unit/API, 163 integration.** The roadmap's Phase 1 exit test — "User A
+cannot access User B's tender" — now passes on real tenders, including uploads into a foreign
+tender (404) and document listing across users.
+
+One fix during the phase: a shared strip-validator turned a whitespace-only title into `None`,
+producing a 500 instead of a 422; caught by the integration suite.
+
+### Remaining limitations after Phase 3
+
+- No document download endpoint — nothing needs it until the frontend's source viewer (Phase 10).
+- No virus scanning (documented as future work since Phase 0).
+- Orphaned files after a crash between commit and cleanup are logged, not swept automatically.
+
+---
+
+## Phase 4 — Page-aware extraction (next)
+
+Not started. PyMuPDF extraction into `document_pages` with preserved page numbers, normalized
+text alongside raw text, per-page quality scoring, empty/scanned detection with a clear
+unsupported-quality outcome (no OCR — postponed by the roadmap), and the extracted-page API.

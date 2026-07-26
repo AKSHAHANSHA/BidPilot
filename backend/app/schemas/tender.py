@@ -20,9 +20,9 @@ class TenderBase(BaseModel):
     submission_deadline: datetime | None = None
     notes: Annotated[str | None, Field(max_length=MAX_NOTES_LENGTH)] = None
 
-    @field_validator("title", "buyer", "reference", "industry")
+    @field_validator("buyer", "reference", "industry")
     @classmethod
-    def _strip(cls, value: str | None) -> str | None:
+    def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
             return None
         stripped = value.strip()

@@ -19,13 +19,15 @@ from tests.integration.conftest import alembic_config
 
 pytestmark = pytest.mark.integration
 
-EXPECTED_HEAD = "0003"
+EXPECTED_HEAD = "0004"
 EXPECTED_TABLES = (
     "users",
     "refresh_sessions",
     "company_profiles",
     "company_evidence",
     "company_projects",
+    "tenders",
+    "documents",
 )
 
 
@@ -110,10 +112,11 @@ async def test_upgrade_is_repeatable_after_downgrade() -> None:
 async def test_single_step_downgrade_removes_only_the_latest_tables() -> None:
     await upgrade()
     await downgrade("-1")
-    assert await read_revision() == "0002"
-    # Phase 2's tables are gone; Phase 1's remain.
-    assert await table_exists("company_profiles") is False
-    assert await table_exists("company_evidence") is False
+    assert await read_revision() == "0003"
+    # Phase 3's tables are gone; earlier phases' remain.
+    assert await table_exists("tenders") is False
+    assert await table_exists("documents") is False
+    assert await table_exists("company_profiles") is True
     assert await table_exists("users") is True
 
 

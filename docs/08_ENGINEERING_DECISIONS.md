@@ -361,6 +361,29 @@ genuinely belong to the profile, so they nest. `PATCH` supersedes that document'
 updates are partial. Offset pagination with a total count, not cursors: these lists are per-user
 and small, and the frontend wants a page count.
 
+## D35 — Upload acceptance is decided by bytes, not names or headers
+
+The client's filename and Content-Type are attacker-controlled, so a file is accepted as a PDF
+only if its leading bytes are `%PDF-`. A renamed executable fails; a PDF with a wrong header
+passes. Full structural parsing is Phase 4's job. The original filename is sanitized for
+display only — storage keys are always `{user_id}/{tender_id}/{uuid}.pdf`, generated
+server-side, and the local adapter still resolve-checks every key against the upload root as
+defence in depth.
+
+Duplicate detection is a per-tender unique constraint on `(tender_id, sha256)`: the same PDF on
+two tenders is legitimate; twice on one is a mistake, returned as 409 naming the existing
+document. The service pre-checks for a friendly message, but the constraint is the arbiter
+under concurrency.
+
+## D36 — Database first, files second
+
+The database is the source of truth for documents. Upload writes the file, then flushes the
+row, and deletes the file if the flush fails — a failed request leaves neither half. Deletion
+removes the row first and then the file best-effort: an orphaned file wastes disk and is
+logged; a row without a file would be a broken document. Tender status stays a small
+vocabulary (`active`/`archived`) because analysis progress and the bid decision belong to the
+Analysis entity, not the tender.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

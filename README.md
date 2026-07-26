@@ -26,7 +26,7 @@ working until its verification commands have been run.
 | 0 | Repository foundation, config, logging, error contract, health, migrations, CI | **Complete** |
 | 1 | Authentication, refresh rotation, rate limiting, ownership enforcement | **Complete** |
 | 2 | Company profile, evidence, and projects; derived expiry; profile completion | **Complete** |
-| 3 | Tender CRUD and PDF upload | Not started |
+| 3 | Tender CRUD, secure PDF upload, storage adapter, duplicate detection | **Complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |
@@ -302,6 +302,21 @@ number instead of just displaying it.
 
 Filter evidence by `category`, `verification_status`, `expiry_state`, `search`, and `tag`;
 projects by `status`, `search`, and `service`. Both use offset pagination with a total count.
+
+## Tenders and documents
+
+```text
+GET/POST      /api/v1/tenders                     list (status/search/deadline filters) · create
+GET/PATCH/DELETE /api/v1/tenders/{id}             delete removes documents and their files
+POST          /api/v1/tenders/{id}/documents      multipart PDF upload
+GET           /api/v1/tenders/{id}/documents
+GET/DELETE    /api/v1/documents/{id}
+```
+
+Uploads are accepted by **content, not name**: the leading bytes must be `%PDF-`, size is
+bounded by `MAX_UPLOAD_BYTES`, and the SHA-256 is recorded. An identical file on the same
+tender returns 409; the client's filename is sanitized for display only, and storage paths are
+always server-generated (`{user_id}/{tender_id}/{uuid}.pdf`).
 
 ### Demo data
 
