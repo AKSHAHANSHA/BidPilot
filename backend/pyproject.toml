@@ -20,10 +20,10 @@ dependencies = [
     "argon2-cffi>=23.1",
     "pyjwt>=2.10",
     "email-validator>=2.2",
+    "python-multipart>=0.0.18",
 ]
 
 # Dependencies for phases not yet implemented are deliberately absent:
-#   python-multipart          -> Phase 3 (uploads)
 #   pymupdf                   -> Phase 4 (page-aware extraction)
 #   dramatiq[redis]           -> Phase 5 (background jobs)
 #   openai                    -> Phase 6 (requirement extraction)

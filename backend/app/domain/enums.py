@@ -82,6 +82,26 @@ class ProjectStatus(VocabularyEnum):
     CURRENT = "current"
 
 
+class TenderStatus(VocabularyEnum):
+    """Lifecycle of the tender record itself.
+
+    Deliberately small: analysis progress and the bid/no-bid decision are properties of an
+    Analysis (Phase 5+), not of the tender. Mixing them here would duplicate state.
+    """
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class DocumentExtractionStatus(VocabularyEnum):
+    """Where an uploaded document sits in the extraction pipeline (Phase 4 populates it)."""
+
+    PENDING = "pending"
+    EXTRACTED = "extracted"
+    FAILED = "failed"
+    UNSUPPORTED = "unsupported"
+
+
 class RevenueRange(VocabularyEnum):
     """Coarse bands. A band is easier for a user to disclose than an exact figure, and precise
     enough for the contract-size sanity checks in later phases."""

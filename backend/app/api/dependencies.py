@@ -26,9 +26,13 @@ from app.repositories.company_repository import (
     CompanyProjectRepository,
 )
 from app.repositories.refresh_session_repository import RefreshSessionRepository
+from app.repositories.tender_repository import DocumentRepository, TenderRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService, ClientContext
 from app.services.company_service import CompanyService
+from app.services.tender_service import TenderService
+from app.storage.base import StorageBackend
+from app.storage.local import LocalStorage
 
 logger = get_logger(__name__)
 
@@ -82,6 +86,28 @@ def get_company_service(session: SessionDep, settings: SettingsDep) -> CompanySe
 
 
 CompanyServiceDep = Annotated[CompanyService, Depends(get_company_service)]
+
+
+def get_storage(settings: SettingsDep) -> StorageBackend:
+    # Only the local backend exists; an S3 adapter is added when deployment requires it.
+    return LocalStorage(settings.upload_dir)
+
+
+StorageDep = Annotated[StorageBackend, Depends(get_storage)]
+
+
+def get_tender_service(
+    session: SessionDep, settings: SettingsDep, storage: StorageDep
+) -> TenderService:
+    return TenderService(
+        tenders=TenderRepository(session),
+        documents=DocumentRepository(session),
+        storage=storage,
+        settings=settings,
+    )
+
+
+TenderServiceDep = Annotated[TenderService, Depends(get_tender_service)]
 
 
 async def get_current_user(
