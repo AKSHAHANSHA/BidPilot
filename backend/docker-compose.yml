@@ -66,13 +66,11 @@ services:
       redis:
         condition: service_healthy
 
-  # The worker process arrives with Phase 5 (background jobs). Declared here so the
-  # deployment topology is visible, but it has no command until then.
   worker:
-    profiles: ["worker"]
+    profiles: ["app", "worker"]
     build:
       context: .
-    command: ["python", "-c", "raise SystemExit('Worker is implemented in Phase 5')"]
+    command: ["python", "-m", "dramatiq", "app.workers.main"]
     env_file:
       - .env
     environment:

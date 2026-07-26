@@ -43,8 +43,8 @@ dev: up migrate api ## Start dependencies, migrate, then run the API
 api: ## Run the API with autoreload
 	$(PY) -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-worker: ## Run the background worker
-	@echo "The worker is implemented in Phase 5 (background jobs and progress)." && exit 1
+worker: ## Run the background analysis worker
+	$(PY) -m dramatiq app.workers.main
 
 migrate: ## Apply all migrations
 	$(PY) -m alembic upgrade head

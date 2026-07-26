@@ -97,7 +97,7 @@ Targets:
         Invoke-Step 'uvicorn' @('-m', 'uvicorn', 'app.main:app', '--reload', '--host', '127.0.0.1', '--port', '8000')
     }
 
-    'worker' { Show-NotYetImplemented 'The worker is implemented in Phase 5 (background jobs and progress).' }
+    'worker' { Invoke-Step 'dramatiq worker' @('-m', 'dramatiq', 'app.workers.main') }
     'seed' { Show-NotYetImplemented 'Seeding is implemented in Phase 2 (company profile and evidence).' }
     'eval' { Show-NotYetImplemented 'Evaluation is implemented in Phase 11 (evaluation and polish).' }
     'demo-reset' { Show-NotYetImplemented 'Demo reset is implemented in Phase 11 (evaluation and polish).' }

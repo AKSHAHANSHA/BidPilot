@@ -5,6 +5,7 @@ so Alembic autogenerate sees the full schema; forgetting a model here would sile
 migration that drops its table.
 """
 
+from app.models.analysis import Analysis
 from app.models.company_evidence import CompanyEvidence
 from app.models.company_profile import CompanyProfile
 from app.models.company_project import CompanyProject
@@ -15,6 +16,7 @@ from app.models.tender import Tender
 from app.models.user import User
 
 __all__ = [
+    "Analysis",
     "CompanyEvidence",
     "CompanyProfile",
     "CompanyProject",

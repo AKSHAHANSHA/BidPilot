@@ -7,10 +7,11 @@ documents (Phase 4), analyses and events (Phase 5), requirements, risks, readine
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, company, health, tenders
+from app.api.v1 import analyses, auth, company, health, tenders
 
 api_router = APIRouter()
 api_router.include_router(health.router)
 api_router.include_router(auth.router)
 api_router.include_router(company.router)
 api_router.include_router(tenders.router)
+api_router.include_router(analyses.router)

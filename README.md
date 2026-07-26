@@ -28,6 +28,7 @@ working until its verification commands have been run.
 | 2 | Company profile, evidence, and projects; derived expiry; profile completion | **Complete** |
 | 3 | Tender CRUD, secure PDF upload, storage adapter, duplicate detection | **Complete** |
 | 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | **Complete** |
+| 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | **Complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |
@@ -328,6 +329,28 @@ retrievable, which is what the source viewer and citation verification build on:
 GET /api/v1/documents/{id}/pages              per-page metadata (numbers, sizes, quality)
 GET /api/v1/documents/{id}/pages/{number}     one page's extracted text
 ```
+
+## Analysis jobs
+
+Analysis runs in a background worker so the API stays responsive. PostgreSQL — not Redis — is
+the authoritative record of job state; Redis only carries the Dramatiq message.
+
+```text
+POST /api/v1/tenders/{id}/analyses     queue a run (202 Accepted)
+GET  /api/v1/analyses/{id}             full record with provenance and cost
+GET  /api/v1/analyses/{id}/events      poll status + stage (every 2-3s; no fake percentage)
+POST /api/v1/analyses/{id}/retry       re-queue a failed run
+```
+
+Run the worker alongside the API:
+
+```bash
+make worker      # or: ./make.ps1 worker  (dramatiq app.workers.main)
+```
+
+The pipeline is an ordered list of stage handlers; each roadmap phase from 6 onward inserts its
+stage (metadata, requirements, citations, matching, risks, scoring, report) before completion.
+Every stage transition is committed, so status always reflects real progress.
 
 ### Demo data
 

@@ -13,7 +13,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 2 | Company profile, evidence, and projects | Complete |
 | 3 | Tender CRUD and PDF upload | Complete |
 | 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | Complete |
-| 5 | Background jobs and progress | Not started |
+| 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | Complete |
 | 6 | Requirement extraction | Not started |
 | 7 | Citation verification | Not started |
 | 8 | Evidence matching and risks | Not started |
@@ -318,8 +318,53 @@ is retrievable with correct numbering.
 
 ---
 
-## Phase 5 — Background jobs (next)
+## Phase 5 — Background jobs and the analysis state machine
 
-Not started. Dramatiq + Redis broker, a worker process, a persistent analysis state machine
-with progress/retries/idempotency, and an SSE-or-polling progress endpoint. The `Analysis`
-entity is introduced here.
+**Complete.** `Analysis` entity (migration `0006`) with a coarse status, fine-grained stage,
+safe error code, attempt count, version, and provenance/cost columns. Dramatiq + Redis worker
+(`app/workers/`), the pipeline as an ordered stage registry that phases 6-9 extend, a `JobQueue`
+protocol (Dramatiq in prod, eager inline in tests), a polling progress endpoint, retry, and
+idempotency. PostgreSQL is the authoritative job record; Redis only carries the message
+(D39-D42).
+
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (67 files), **218 unit/API tests** |
+| `./make.ps1 test-integration` | **189 passed** (analysis lifecycle, pipeline state machine, ownership) |
+| `alembic upgrade head` / `alembic check` | head `0006`, no drift |
+| `./make.ps1 openapi` | 24 paths |
+| Live smoke test with the **real Dramatiq worker** | POST returned **202 queued in 108 ms**; the worker process drove `validating → extracting_text → assessing_quality → completed` out-of-process; polling saw the transition |
+
+**Totals: 407 tests — 218 unit/API, 189 integration.** Exit test met: the API stays responsive
+while the job processes in a separate worker.
+
+### Endpoints
+
+```text
+POST /api/v1/tenders/{id}/analyses      queue a run (202); returns the active run if one exists
+GET  /api/v1/tenders/{id}/analyses      list versions, newest first
+GET  /api/v1/analyses/{id}              full record
+GET  /api/v1/analyses/{id}/events       compact status/stage for polling (no fake percentage)
+POST /api/v1/analyses/{id}/retry        re-queue a failed run in place
+```
+
+### Remaining limitations after Phase 5
+
+- The pipeline runs only the three stages that exist today; the AI stages (metadata,
+  requirements, citations, matching, risks, scoring, report) are inserted by phases 6-9. This
+  is honest, not a stub — the run genuinely validates and confirms extraction.
+- Progress is polling, not SSE (the roadmap allows either). SSE can be added later without a
+  contract change.
+- The eager queue used in tests runs synchronously; true concurrency/retry-backoff behaviour is
+  Dramatiq's and is exercised only in the manual live test, not the suite (deliberate — CI must
+  not depend on a broker).
+
+---
+
+## Phase 6 — Requirement extraction (next)
+
+Not started. Provider-neutral LLM adapter (OpenAI primary), strict Pydantic outputs, prompt
+versioning, batched requirement extraction, token/cost tracking. Provider calls are mocked in
+the normal suite; live calls are manual and cost-controlled.

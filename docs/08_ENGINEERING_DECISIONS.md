@@ -415,6 +415,51 @@ then builds and flushes the pages. A too-broad `except IntegrityError` had disgu
 spurious duplicate-SHA 409; the handler now inspects the constraint name and only maps the SHA
 constraint to a conflict, re-raising anything else.
 
+## D39 — The pipeline is an ordered registry of stage handlers
+
+`app/workers/pipeline.py` holds `PIPELINE`, a tuple of `(stage, handler)` pairs run in order.
+Phases 6-9 add their stages by inserting a pair before `COMPLETED` — no change to the
+orchestration, the retry logic, or the failure handling. Each handler commits its stage
+transition immediately (`_advance`), so PostgreSQL always reflects the true current stage and a
+crash leaves an accurate `current_stage`, never a fabricated one.
+
+Phase 5 ships only the three stages that exist today (validate the document, load pages, assess
+quality) and completes. That is honest: the analysis genuinely validates and confirms the
+document is analysable. The `AnalysisStage` enum lists the full progression now so the persisted
+vocabulary is stable, but a stage the pipeline has not reached is simply never written.
+
+## D40 — Coarse status plus fine stage plus safe error code
+
+`Analysis.status` is the coarse lifecycle (`queued`/`processing`/`completed`/`failed`/
+`cancelled`); `current_stage` is the fine-grained position; `error_code` is a safe enum
+(`failed_validation`/`failed_extraction`/`failed_ai`/`failed_internal`). The developer-facing
+detail is logged, never stored or returned — the same discipline as the RFC 7807 contract. No
+progress percentage is stored or exposed; the events endpoint returns status and stage only
+(`docs/05` processing room, CLAUDE.md "no fake progress").
+
+## D41 — Commit before enqueue; PostgreSQL is job truth
+
+The service commits the analysis row, then enqueues. A Dramatiq worker runs in a separate
+process and transaction, so it can only see a committed row — enqueuing first would race. The
+pipeline itself owns its transaction, advancing and committing each stage. Redis carries the
+*message*; PostgreSQL is the authoritative record of job state (`docs/02` §4), so status
+survives a broker restart and the API never consults Redis to answer "how is my analysis
+doing?".
+
+Idempotency: `run_analysis` returns immediately if the analysis is already terminal, so a
+duplicate Dramatiq delivery cannot reprocess a finished job. Creating an analysis while one is
+queued or processing returns the existing run; otherwise it creates the next version. Retry
+re-queues a failed run in place, incrementing `attempt_count`.
+
+## D42 — `JobQueue` protocol with an eager test adapter
+
+The service depends on a `JobQueue` protocol, not on Dramatiq. `DramatiqJobQueue` sends to
+Redis; `EagerJobQueue` runs the pipeline inline against a given session. Tests override the
+dependency with the eager adapter, so the full journey (queue → process → complete) is asserted
+without a running broker or worker, and CI never needs Redis for the pipeline. The real
+Dramatiq path is covered by the manual live smoke test, which confirmed the API returns 202 in
+~100 ms while the worker processes the job out-of-process.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

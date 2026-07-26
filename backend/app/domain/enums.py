@@ -102,6 +102,47 @@ class DocumentExtractionStatus(VocabularyEnum):
     UNSUPPORTED = "unsupported"
 
 
+class AnalysisStatus(VocabularyEnum):
+    """Coarse lifecycle of an analysis job. `current_stage` carries the fine-grained detail."""
+
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class AnalysisStage(VocabularyEnum):
+    """Fine-grained pipeline position (`docs/02_BACKEND_ARCHITECTURE.md` §6).
+
+    The full progression is fixed now so the persisted vocabulary is stable; phases 6-9 fill in
+    the handlers for the stages between quality assessment and report generation. A stage the
+    pipeline has not reached yet is simply never written — no fake progress.
+    """
+
+    QUEUED = "queued"
+    VALIDATING = "validating"
+    EXTRACTING_TEXT = "extracting_text"
+    ASSESSING_QUALITY = "assessing_quality"
+    EXTRACTING_METADATA = "extracting_metadata"
+    EXTRACTING_REQUIREMENTS = "extracting_requirements"
+    VERIFYING_CITATIONS = "verifying_citations"
+    MATCHING_EVIDENCE = "matching_evidence"
+    ANALYSING_RISKS = "analysing_risks"
+    SCORING = "scoring"
+    GENERATING_REPORT = "generating_report"
+    COMPLETED = "completed"
+
+
+class AnalysisErrorCode(VocabularyEnum):
+    """Safe, machine-readable failure reason. Developer detail lives in logs only."""
+
+    FAILED_VALIDATION = "failed_validation"
+    FAILED_EXTRACTION = "failed_extraction"
+    FAILED_AI = "failed_ai"
+    FAILED_INTERNAL = "failed_internal"
+
+
 class RevenueRange(VocabularyEnum):
     """Coarse bands. A band is easier for a user to disclose than an exact figure, and precise
     enough for the contract-size sanity checks in later phases."""

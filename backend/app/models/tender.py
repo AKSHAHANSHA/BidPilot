@@ -23,6 +23,7 @@ from app.domain.enums import TenderStatus
 from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.analysis import Analysis
     from app.models.document import Document
 
 
@@ -58,6 +59,11 @@ class Tender(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text, default=None)
 
     documents: Mapped[list[Document]] = relationship(
+        back_populates="tender",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    analyses: Mapped[list[Analysis]] = relationship(
         back_populates="tender",
         cascade="all, delete-orphan",
         passive_deletes=True,

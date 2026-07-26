@@ -20,6 +20,7 @@ from app.core.database import get_session
 from app.core.logging import get_logger, user_id_var
 from app.core.security import TokenError, decode_access_token
 from app.models.user import User
+from app.repositories.analysis_repository import AnalysisRepository
 from app.repositories.company_repository import (
     CompanyEvidenceRepository,
     CompanyProfileRepository,
@@ -28,11 +29,13 @@ from app.repositories.company_repository import (
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.repositories.tender_repository import DocumentRepository, TenderRepository
 from app.repositories.user_repository import UserRepository
+from app.services.analysis_service import AnalysisService
 from app.services.auth_service import AuthService, ClientContext
 from app.services.company_service import CompanyService
 from app.services.tender_service import TenderService
 from app.storage.base import StorageBackend
 from app.storage.local import LocalStorage
+from app.workers.queue import DramatiqJobQueue, JobQueue
 
 logger = get_logger(__name__)
 
@@ -108,6 +111,30 @@ def get_tender_service(
 
 
 TenderServiceDep = Annotated[TenderService, Depends(get_tender_service)]
+
+
+def get_job_queue() -> JobQueue:
+    # Production sends to Redis for the worker. Tests override this with an eager queue that
+    # runs the pipeline inline against the test session.
+    return DramatiqJobQueue()
+
+
+JobQueueDep = Annotated[JobQueue, Depends(get_job_queue)]
+
+
+def get_analysis_service(
+    session: SessionDep, settings: SettingsDep, job_queue: JobQueueDep
+) -> AnalysisService:
+    return AnalysisService(
+        analyses=AnalysisRepository(session),
+        tenders=TenderRepository(session),
+        documents=DocumentRepository(session),
+        job_queue=job_queue,
+        settings=settings,
+    )
+
+
+AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
 
 
 async def get_current_user(

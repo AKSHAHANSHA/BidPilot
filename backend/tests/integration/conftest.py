@@ -92,6 +92,13 @@ def app(settings: Settings, db_session: AsyncSession) -> FastAPI:
             raise
 
     application.dependency_overrides[get_session] = override_get_session
+
+    # Run the analysis pipeline inline against the test session instead of enqueuing to Redis,
+    # so the full journey (queue → process → complete) can be asserted without a live worker.
+    from app.api.dependencies import get_job_queue
+    from app.workers.queue import EagerJobQueue
+
+    application.dependency_overrides[get_job_queue] = lambda: EagerJobQueue(db_session)
     return application
 
 
