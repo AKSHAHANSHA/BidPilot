@@ -11,6 +11,7 @@ from sqlalchemy.sql.functions import concat
 
 from app.domain.enums import TenderStatus
 from app.models.document import Document
+from app.models.document_page import DocumentPage
 from app.models.tender import Tender
 from app.repositories.base import OwnedRepository
 
@@ -86,6 +87,26 @@ class DocumentRepository(OwnedRepository[Document]):
                 Document.tender_id == tender_id,
                 self.owned_by(user_id),
                 Document.sha256 == sha256,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list_pages(self, document_id: uuid.UUID, user_id: uuid.UUID) -> list[DocumentPage]:
+        result = await self.session.execute(
+            select(DocumentPage)
+            .where(DocumentPage.document_id == document_id, DocumentPage.owner_user_id == user_id)
+            .order_by(DocumentPage.page_number)
+        )
+        return list(result.scalars().all())
+
+    async def get_page(
+        self, document_id: uuid.UUID, user_id: uuid.UUID, page_number: int
+    ) -> DocumentPage | None:
+        result = await self.session.execute(
+            select(DocumentPage).where(
+                DocumentPage.document_id == document_id,
+                DocumentPage.owner_user_id == user_id,
+                DocumentPage.page_number == page_number,
             )
         )
         return result.scalar_one_or_none()

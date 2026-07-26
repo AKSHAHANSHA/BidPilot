@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 
 from sqlalchemy.exc import IntegrityError
@@ -9,8 +10,11 @@ from sqlalchemy.exc import IntegrityError
 from app.api.errors import ConflictError, NotFoundError
 from app.core.config import Settings
 from app.core.logging import get_logger
+from app.documents.extraction import extract_pdf_pages
 from app.documents.validation import validate_pdf_upload
+from app.domain.enums import DocumentExtractionStatus
 from app.models.document import Document
+from app.models.document_page import DocumentPage
 from app.models.tender import Tender
 from app.repositories.tender_repository import (
     DocumentRepository,
@@ -121,11 +125,23 @@ class TenderService:
                 extra={"existing_document_id": str(duplicate.id)},
             )
 
+        # Parse and extract before anything is persisted: a corrupt, encrypted, or oversized
+        # PDF is rejected outright, leaving no file and no row. PyMuPDF is CPU-bound sync
+        # code, so it runs in a worker thread rather than on the event loop.
+        extraction = await asyncio.to_thread(
+            extract_pdf_pages, validated.content, max_pages=self.settings.max_pdf_pages
+        )
+
         stored_filename = f"{uuid.uuid4().hex}.pdf"
         storage_key = f"{user_id}/{tender.id}/{stored_filename}"
 
         await self.storage.save(storage_key, validated.content)
 
+        status = (
+            DocumentExtractionStatus.EXTRACTED
+            if extraction.is_text_extractable
+            else DocumentExtractionStatus.UNSUPPORTED
+        )
         document = Document(
             owner_user_id=user_id,
             tender_id=tender.id,
@@ -135,16 +151,41 @@ class TenderService:
             mime_type="application/pdf",
             size_bytes=validated.size_bytes,
             sha256=validated.sha256,
+            page_count=extraction.page_count,
+            extraction_status=status.value,
         )
         self.documents.add(document)
         try:
+            # Flush before building pages: `id` carries a column default, so it is only
+            # populated once the INSERT runs. Reading it earlier yields None and every page
+            # row would violate the foreign key.
+            await self.documents.flush()
+
+            # Pages are stored even for an unsupported document so the UI can show *why* it is
+            # unsupported (every page empty) rather than a bare status.
+            for page in extraction.pages:
+                self.documents.session.add(
+                    DocumentPage(
+                        owner_user_id=user_id,
+                        document_id=document.id,
+                        page_number=page.page_number,
+                        text=page.text,
+                        normalized_text=page.normalized_text,
+                        character_count=page.character_count,
+                        quality_score=page.quality_score,
+                        extraction_method=page.extraction_method,
+                    )
+                )
             await self.documents.flush()
         except IntegrityError as exc:
-            # Concurrent duplicate upload lost the race with the unique constraint.
             await self.storage.delete(storage_key)
-            raise ConflictError(
-                "This file is already attached to the tender (identical SHA-256)."
-            ) from exc
+            # Only the SHA constraint means "duplicate"; anything else is a genuine fault and
+            # must not be disguised as a friendly 409.
+            if "uq_documents_tender_sha256" in str(exc.orig):
+                raise ConflictError(
+                    "This file is already attached to the tender (identical SHA-256)."
+                ) from exc
+            raise
         except Exception:
             await self.storage.delete(storage_key)
             raise
@@ -170,6 +211,19 @@ class TenderService:
         # "no documents" from "not your tender".
         await self.get_tender(user_id=user_id, tender_id=tender_id)
         return await self.documents.list_for_tender(tender_id, user_id)
+
+    async def list_pages(self, *, user_id: uuid.UUID, document_id: uuid.UUID) -> list[DocumentPage]:
+        await self.get_document(user_id=user_id, document_id=document_id)
+        return await self.documents.list_pages(document_id, user_id)
+
+    async def get_page(
+        self, *, user_id: uuid.UUID, document_id: uuid.UUID, page_number: int
+    ) -> DocumentPage:
+        await self.get_document(user_id=user_id, document_id=document_id)
+        page = await self.documents.get_page(document_id, user_id, page_number)
+        if page is None:
+            raise NotFoundError(f"Page {page_number} does not exist on this document.")
+        return page
 
     async def delete_document(self, *, user_id: uuid.UUID, document_id: uuid.UUID) -> None:
         document = await self.get_document(user_id=user_id, document_id=document_id)

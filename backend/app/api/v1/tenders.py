@@ -16,7 +16,14 @@ from app.models.document import Document
 from app.models.tender import Tender
 from app.repositories.tender_repository import TenderFilters
 from app.schemas.common import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT, Page
-from app.schemas.tender import DocumentRead, TenderCreate, TenderRead, TenderUpdate
+from app.schemas.tender import (
+    DocumentPageRead,
+    DocumentPageSummary,
+    DocumentRead,
+    TenderCreate,
+    TenderRead,
+    TenderUpdate,
+)
 
 router = APIRouter(tags=["tenders"])
 
@@ -192,6 +199,39 @@ async def get_document(
 ) -> DocumentRead:
     document = await service.get_document(user_id=current_user.id, document_id=document_id)
     return _document_read(document)
+
+
+@router.get(
+    "/documents/{document_id}/pages",
+    response_model=list[DocumentPageSummary],
+    summary="List a document's extracted pages",
+    description="Page numbers, sizes, and quality scores without the text.",
+    responses=_OWNED,
+)
+async def list_document_pages(
+    document_id: DocumentId, current_user: CurrentUser, service: TenderServiceDep
+) -> list[DocumentPageSummary]:
+    pages = await service.list_pages(user_id=current_user.id, document_id=document_id)
+    return [DocumentPageSummary.model_validate(p) for p in pages]
+
+
+@router.get(
+    "/documents/{document_id}/pages/{page_number}",
+    response_model=DocumentPageRead,
+    summary="Get one extracted page",
+    description="The page's extracted text, exactly as cited findings will reference it.",
+    responses=_OWNED,
+)
+async def get_document_page(
+    document_id: DocumentId,
+    page_number: Annotated[int, Path(ge=1, description="1-based page number.")],
+    current_user: CurrentUser,
+    service: TenderServiceDep,
+) -> DocumentPageRead:
+    page = await service.get_page(
+        user_id=current_user.id, document_id=document_id, page_number=page_number
+    )
+    return DocumentPageRead.model_validate(page)
 
 
 @router.delete(

@@ -27,6 +27,7 @@ from app.domain.enums import DocumentExtractionStatus
 from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.document_page import DocumentPage
     from app.models.tender import Tender
 
 
@@ -43,6 +44,8 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         # SHA-256 duplicate detection is scoped to the tender: the same PDF may legitimately
         # appear on two different tenders, but uploading it twice to one is a mistake.
         UniqueConstraint("tender_id", "sha256", name="uq_documents_tender_sha256"),
+        # Supports document_pages' composite foreign key (ownership pattern, docs/08 D27).
+        UniqueConstraint("id", "owner_user_id", name="uq_documents_id_owner_user_id"),
         CheckConstraint(
             f"extraction_status IN ({DocumentExtractionStatus.sql_in_list()})",
             name="extraction_status",
@@ -71,6 +74,11 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     tender: Mapped[Tender] = relationship(back_populates="documents")
+    pages: Mapped[list[DocumentPage]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Document id={self.id} status={self.extraction_status}>"

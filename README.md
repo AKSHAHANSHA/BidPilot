@@ -27,6 +27,7 @@ working until its verification commands have been run.
 | 1 | Authentication, refresh rotation, rate limiting, ownership enforcement | **Complete** |
 | 2 | Company profile, evidence, and projects; derived expiry; profile completion | **Complete** |
 | 3 | Tender CRUD, secure PDF upload, storage adapter, duplicate detection | **Complete** |
+| 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | **Complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |
@@ -317,6 +318,16 @@ Uploads are accepted by **content, not name**: the leading bytes must be `%PDF-`
 bounded by `MAX_UPLOAD_BYTES`, and the SHA-256 is recorded. An identical file on the same
 tender returns 409; the client's filename is sanitized for display only, and storage paths are
 always server-generated (`{user_id}/{tender_id}/{uuid}.pdf`).
+
+On upload the PDF is parsed page-by-page with PyMuPDF (page numbers preserved 1-based, raw and
+normalized text stored, per-page quality scored). A document with too little text — a scanned
+PDF — is recorded as `unsupported` rather than transcribed; there is no OCR. Pages are then
+retrievable, which is what the source viewer and citation verification build on:
+
+```text
+GET /api/v1/documents/{id}/pages              per-page metadata (numbers, sizes, quality)
+GET /api/v1/documents/{id}/pages/{number}     one page's extracted text
+```
 
 ### Demo data
 

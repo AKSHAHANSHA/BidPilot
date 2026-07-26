@@ -793,6 +793,69 @@
         "title": "DocumentExtractionStatus",
         "type": "string"
       },
+      "DocumentPageRead": {
+        "description": "One page with its extracted text, for the source viewer.",
+        "properties": {
+          "character_count": {
+            "title": "Character Count",
+            "type": "integer"
+          },
+          "extraction_method": {
+            "title": "Extraction Method",
+            "type": "string"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "quality_score": {
+            "title": "Quality Score",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "character_count",
+          "quality_score",
+          "extraction_method",
+          "text"
+        ],
+        "title": "DocumentPageRead",
+        "type": "object"
+      },
+      "DocumentPageSummary": {
+        "description": "Per-page metadata without the text \u2014 the document's extraction overview.",
+        "properties": {
+          "character_count": {
+            "title": "Character Count",
+            "type": "integer"
+          },
+          "extraction_method": {
+            "title": "Extraction Method",
+            "type": "string"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "quality_score": {
+            "title": "Quality Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "page_number",
+          "character_count",
+          "quality_score",
+          "extraction_method"
+        ],
+        "title": "DocumentPageSummary",
+        "type": "object"
+      },
       "DocumentRead": {
         "properties": {
           "created_at": {
@@ -3995,6 +4058,164 @@
           }
         ],
         "summary": "Get a document record",
+        "tags": [
+          "tenders"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/pages": {
+      "get": {
+        "description": "Page numbers, sizes, and quality scores without the text.",
+        "operationId": "list_document_pages_api_v1_documents__document_id__pages_get",
+        "parameters": [
+          {
+            "description": "Document identifier.",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "description": "Document identifier.",
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentPageSummary"
+                  },
+                  "title": "Response List Document Pages Api V1 Documents  Document Id  Pages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List a document's extracted pages",
+        "tags": [
+          "tenders"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/pages/{page_number}": {
+      "get": {
+        "description": "The page's extracted text, exactly as cited findings will reference it.",
+        "operationId": "get_document_page_api_v1_documents__document_id__pages__page_number__get",
+        "parameters": [
+          {
+            "description": "Document identifier.",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "description": "Document identifier.",
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number.",
+            "in": "path",
+            "name": "page_number",
+            "required": true,
+            "schema": {
+              "description": "1-based page number.",
+              "minimum": 1,
+              "title": "Page Number",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPageRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one extracted page",
         "tags": [
           "tenders"
         ]

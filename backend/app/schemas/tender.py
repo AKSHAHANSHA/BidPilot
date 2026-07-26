@@ -86,6 +86,23 @@ class DocumentRead(BaseModel):
         return str(value)
 
 
+class DocumentPageSummary(BaseModel):
+    """Per-page metadata without the text — the document's extraction overview."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    page_number: int
+    character_count: int
+    quality_score: float
+    extraction_method: str
+
+
+class DocumentPageRead(DocumentPageSummary):
+    """One page with its extracted text, for the source viewer."""
+
+    text: str
+
+
 class TenderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

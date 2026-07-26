@@ -13,11 +13,16 @@ import pytest
 from httpx import AsyncClient
 
 from tests.conftest import TEST_UPLOAD_DIR
+from tests.integration.factories import make_pdf
 from tests.integration.test_company_api import Signed, sign_up
 
 pytestmark = pytest.mark.integration
 
-PDF = b"%PDF-1.7\n1 0 obj\n<<>>\nendobj\ntrailer\n%%EOF"
+PAGE_TEXT = (
+    "The bidder shall maintain a valid ISO 9001 certificate for the duration of the contract "
+    "and shall provide evidence of renewal not later than thirty days before expiry."
+)
+PDF = make_pdf(f"Page one. {PAGE_TEXT}", f"Page two. {PAGE_TEXT}")
 
 
 def pdf_upload(
@@ -126,8 +131,9 @@ async def test_valid_pdf_is_stored_on_disk_and_recorded(client: AsyncClient) -> 
     document = response.json()
     assert document["original_filename"] == "tender.pdf"
     assert document["size_bytes"] == len(PDF)
-    assert document["extraction_status"] == "pending"
-    assert document["page_count"] is None
+    # Extraction runs at upload time (docs/08 D37): pages exist immediately.
+    assert document["extraction_status"] == "extracted"
+    assert document["page_count"] == 2
 
     # The file genuinely exists under the server-generated key.
     stored = Path(TEST_UPLOAD_DIR) / str(actor.user_id) / tender_id

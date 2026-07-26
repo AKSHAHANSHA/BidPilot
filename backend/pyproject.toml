@@ -21,10 +21,10 @@ dependencies = [
     "pyjwt>=2.10",
     "email-validator>=2.2",
     "python-multipart>=0.0.18",
+    "pymupdf>=1.25",
 ]
 
 # Dependencies for phases not yet implemented are deliberately absent:
-#   pymupdf                   -> Phase 4 (page-aware extraction)
 #   dramatiq[redis]           -> Phase 5 (background jobs)
 #   openai                    -> Phase 6 (requirement extraction)
 
@@ -64,8 +64,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106"] # asserts and dummy secrets are expected in tests
+"tests/**" = ["S101", "S105", "S106", "RUF001"] # asserts, dummy secrets, and typographic fixtures
 "migrations/env.py" = ["E402"]
+# Typographic characters (curly quotes, dashes) are the normalizer's subject matter.
+"app/documents/normalize.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"

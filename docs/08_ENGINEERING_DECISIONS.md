@@ -384,6 +384,37 @@ logged; a row without a file would be a broken document. Tender status stays a s
 vocabulary (`active`/`archived`) because analysis progress and the bid decision belong to the
 Analysis entity, not the tender.
 
+## D37 — Extraction runs synchronously at upload time (for now)
+
+Phase 4 extracts pages inside the upload request (in a worker thread, since PyMuPDF is
+CPU-bound sync code). A 30–80 page PDF parses in well under a second, so this keeps the demo
+simple: upload returns a document already showing `extracted`/`unsupported` and a page count.
+
+Phase 5 moves the *analysis* pipeline to a background worker, but page extraction may stay
+inline — it is fast, and having pages immediately is what lets the upload response report a
+scanned document as `unsupported` rather than deferring that verdict. If large scanned PDFs
+ever make extraction slow, it moves to the worker with no schema change (the status enum
+already has `pending`).
+
+One shared normalizer (`app/documents/normalize.py`) writes `normalized_text` and will process
+the model's quotes in Phase 7 — the same function on both sides, so a citation cannot fail to
+match because two normalizers disagreed. Raw `text` is preserved for the source viewer; case is
+kept (comparison lowercases at match time).
+
+Textless detection is a ratio, not a per-page verdict: a document is `unsupported` when fewer
+than 30% of pages carry real text, catching scanned PDFs with a text cover page. No OCR — the
+roadmap postpones it, and the honest outcome is a clear `unsupported` status with the empty
+pages still stored so the UI can show why.
+
+## D38 — `id` is only populated after flush
+
+Building `DocumentPage` rows that reference `document.id` before flushing the document yields a
+foreign-key violation: the UUID primary key carries a Python-side column default that SQLAlchemy
+applies during the INSERT, not at construction. The upload flow now flushes the document first,
+then builds and flushes the pages. A too-broad `except IntegrityError` had disguised this as a
+spurious duplicate-SHA 409; the handler now inspects the constraint name and only maps the SHA
+constraint to a conflict, re-raising anything else.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

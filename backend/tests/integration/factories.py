@@ -135,6 +135,20 @@ def valid_project_payload(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def make_pdf(*page_texts: str) -> bytes:
+    """A real, parseable PDF with one page per argument. Empty string = textless page."""
+    import pymupdf
+
+    document = pymupdf.open()
+    for text in page_texts or ("",):
+        page = document.new_page()
+        if text:
+            page.insert_text((72, 72), text, fontsize=11)
+    content = document.tobytes()
+    document.close()
+    return bytes(content)
+
+
 def iso(offset_days: int) -> str:
     return (datetime.now(tz=UTC).date() + timedelta(days=offset_days)).isoformat()
 
