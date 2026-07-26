@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(foreach \\($c in @\\('python','py','docker','git','make','node'\\)\\) { $g = Get-Command $c -ErrorAction SilentlyContinue; if \\($g\\) { \"$c => $\\($g.Source\\)\" } else { \"$c => MISSING\" } }; \"---\"; try { python --version } catch { \"no python\" }; try { py -3 --version } catch {}; try { docker --version } catch {}; try { git --version } catch {})",
+      "PowerShell(docker info --format '{{.ServerVersion}} {{.OSType}}'; \"---compose---\"; docker compose version; \"---ports---\"; foreach \\($p in @\\(5432,6379,8000\\)\\) { $r = Test-NetConnection -ComputerName localhost -Port $p -InformationLevel Quiet -WarningAction SilentlyContinue; \"$p in-use=$r\" })",
+      "PowerShell(git -C D:\\\\BidPilot status --short 2>&1)",
+      "PowerShell(git -C D:\\\\BidPilot rev-parse --is-inside-work-tree 2>&1)",
+      "PowerShell(py -3.12 -c \"import sys; print\\(sys.executable, sys.version\\)\")",
+      "PowerShell(\"---rev---\")",
+      "PowerShell(\"---py312---\")",
+      "Bash(git --version)",
+      "Bash(git -C /d/BidPilot rev-parse --is-inside-work-tree)",
+      "PowerShell(py -3.12 -m pip --version; \"---net---\"; try { $r = Invoke-WebRequest -Uri https://pypi.org/simple/fastapi/ -UseBasicParsing -TimeoutSec 15; \"pypi reachable: $\\($r.StatusCode\\)\" } catch { \"pypi UNREACHABLE: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(foreach \\($c in @\\('uv','poetry','pipx','ruff','mypy'\\)\\) { $g = Get-Command $c -ErrorAction SilentlyContinue; if \\($g\\) { \"$c => $\\($g.Source\\)\" } else { \"$c => MISSING\" } }; \"---docker desktop---\"; if \\(Test-Path 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\\) { 'Docker Desktop.exe present' } else { 'Docker Desktop.exe NOT found' }; \\(Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue | Measure-Object\\).Count)"
+    ]
+  }
+}

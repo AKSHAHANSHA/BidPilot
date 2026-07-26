@@ -1,0 +1,91 @@
+# Local development dependencies plus optional containerized API and worker.
+#
+# Everyday use:
+#   docker compose up -d postgres redis
+#
+# Full containerized stack (api + worker + dependencies):
+#   docker compose --profile app up -d
+#
+# Host ports deliberately avoid 5432 and 6379: a developer machine often already runs a
+# PostgreSQL or Redis for another project, and "port is already allocated" is a poor first
+# experience. Container-internal ports stay standard, so the api and worker services reach
+# their dependencies at postgres:5432 and redis:6379 over the compose network.
+# Override with POSTGRES_HOST_PORT / REDIS_HOST_PORT in .env if these clash too.
+
+name: bidpilot
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bidpilot
+      POSTGRES_PASSWORD: bidpilot
+      POSTGRES_DB: bidpilot
+    ports:
+      - "${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Creates the separate bidpilot_test database used by `make test-integration`.
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bidpilot -d bidpilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    # Job messages are re-derivable from PostgreSQL, so persistence is not required here.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "${REDIS_HOST_PORT:-56379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://bidpilot:bidpilot@postgres:5432/bidpilot
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # The worker process arrives with Phase 5 (background jobs). Declared here so the
+  # deployment topology is visible, but it has no command until then.
+  worker:
+    profiles: ["worker"]
+    build:
+      context: .
+    command: ["python", "-c", "raise SystemExit('Worker is implemented in Phase 5')"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://bidpilot:bidpilot@postgres:5432/bidpilot
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - uploads:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  uploads:
