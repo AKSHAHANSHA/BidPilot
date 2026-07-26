@@ -285,6 +285,67 @@
         "title": "Body_upload_document_api_v1_tenders__tender_id__documents_post",
         "type": "object"
       },
+      "CitationMatchMethod": {
+        "description": "How a citation quote was verified against its source page (Phase 7).",
+        "enum": [
+          "exact",
+          "normalized",
+          "fuzzy",
+          "unverified",
+          "rejected"
+        ],
+        "title": "CitationMatchMethod",
+        "type": "string"
+      },
+      "CitationRead": {
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "match_method": {
+            "$ref": "#/components/schemas/CitationMatchMethod"
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "source_quote": {
+            "title": "Source Quote",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "page_number",
+          "source_quote",
+          "verified",
+          "match_method",
+          "match_score"
+        ],
+        "title": "CitationRead",
+        "type": "object"
+      },
       "CompanyProfileCreate": {
         "description": "Full profile. Every required field must be present at creation.",
         "properties": {
@@ -1027,6 +1088,19 @@
         "title": "CompletionRead",
         "type": "object"
       },
+      "ComplianceStatus": {
+        "description": "Machine or human compliance verdict (`docs/01` \u00a75).",
+        "enum": [
+          "unreviewed",
+          "met",
+          "partially_met",
+          "not_met",
+          "needs_clarification",
+          "not_applicable"
+        ],
+        "title": "ComplianceStatus",
+        "type": "string"
+      },
       "DependencyStatus": {
         "properties": {
           "name": {
@@ -1744,6 +1818,38 @@
         "title": "Page[ProjectRead]",
         "type": "object"
       },
+      "Page_RequirementRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[RequirementRead]",
+        "type": "object"
+      },
       "Page_TenderRead_": {
         "properties": {
           "items": {
@@ -2388,6 +2494,125 @@
         "title": "RegisterRequest",
         "type": "object"
       },
+      "RequirementCategory": {
+        "description": "Requirement taxonomy (`docs/01_PRODUCT_REQUIREMENTS.md` \u00a75).",
+        "enum": [
+          "legal_registration",
+          "certification",
+          "technical_capability",
+          "experience",
+          "staffing",
+          "financial",
+          "insurance",
+          "bid_bond_guarantee",
+          "submission_instruction",
+          "deadline",
+          "commercial",
+          "contractual",
+          "health_safety_environment",
+          "data_cybersecurity",
+          "other"
+        ],
+        "title": "RequirementCategory",
+        "type": "string"
+      },
+      "RequirementObligation": {
+        "enum": [
+          "mandatory",
+          "optional",
+          "uncertain"
+        ],
+        "title": "RequirementObligation",
+        "type": "string"
+      },
+      "RequirementRead": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/RequirementCategory"
+          },
+          "citation_verified": {
+            "title": "Citation Verified",
+            "type": "boolean"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationRead"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expected_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Expected Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "machine_status": {
+            "$ref": "#/components/schemas/ComplianceStatus"
+          },
+          "normalized_text": {
+            "title": "Normalized Text",
+            "type": "string"
+          },
+          "obligation": {
+            "$ref": "#/components/schemas/RequirementObligation"
+          },
+          "original_text": {
+            "title": "Original Text",
+            "type": "string"
+          },
+          "review_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Reason"
+          },
+          "reviewed_status": {
+            "$ref": "#/components/schemas/ComplianceStatus"
+          }
+        },
+        "required": [
+          "id",
+          "analysis_id",
+          "category",
+          "obligation",
+          "original_text",
+          "normalized_text",
+          "expected_evidence",
+          "confidence",
+          "citation_verified",
+          "machine_status",
+          "reviewed_status",
+          "review_reason",
+          "citations",
+          "created_at"
+        ],
+        "title": "RequirementRead",
+        "type": "object"
+      },
       "RevenueRange": {
         "description": "Coarse bands. A band is easier for a user to disclose than an exact figure, and precise\nenough for the contract-size sanity checks in later phases.",
         "enum": [
@@ -2983,6 +3208,163 @@
         "summary": "Poll analysis progress",
         "tags": [
           "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}/requirements": {
+      "get": {
+        "operationId": "list_requirements_api_v1_analyses__analysis_id__requirements_get",
+        "parameters": [
+          {
+            "description": "Analysis identifier.",
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "description": "Analysis identifier.",
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RequirementCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "obligation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RequirementObligation"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Obligation"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reviewed_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ComplianceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reviewed Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "citation_verified",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Citation Verified"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_RequirementRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List an analysis's requirements",
+        "tags": [
+          "requirements"
         ]
       }
     },
@@ -4764,6 +5146,76 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/requirements/{requirement_id}": {
+      "get": {
+        "operationId": "get_requirement_api_v1_requirements__requirement_id__get",
+        "parameters": [
+          {
+            "description": "Requirement identifier.",
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "description": "Requirement identifier.",
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one requirement with its citations",
+        "tags": [
+          "requirements"
         ]
       }
     },

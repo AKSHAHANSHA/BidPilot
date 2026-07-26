@@ -74,8 +74,23 @@ async def db_session(migrated_database: None) -> AsyncIterator[AsyncSession]:
         await engine.dispose()
 
 
+class ProviderHolder:
+    """Mutable slot so a test can install a mock LLM provider before calling the API.
+
+    The eager queue reads `.provider` at enqueue time, so a test sets it after building its
+    scripted mock and before POSTing the analysis.
+    """
+
+    provider: object | None = None
+
+
 @pytest.fixture
-def app(settings: Settings, db_session: AsyncSession) -> FastAPI:
+def provider_holder() -> ProviderHolder:
+    return ProviderHolder()
+
+
+@pytest.fixture
+def app(settings: Settings, db_session: AsyncSession, provider_holder: ProviderHolder) -> FastAPI:
     """The real application, with the request session replaced by the test transaction."""
     application = create_app(settings)
 
@@ -98,7 +113,9 @@ def app(settings: Settings, db_session: AsyncSession) -> FastAPI:
     from app.api.dependencies import get_job_queue
     from app.workers.queue import EagerJobQueue
 
-    application.dependency_overrides[get_job_queue] = lambda: EagerJobQueue(db_session)
+    application.dependency_overrides[get_job_queue] = lambda: EagerJobQueue(
+        db_session, provider_holder.provider
+    )
     return application
 
 

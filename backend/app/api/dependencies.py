@@ -27,11 +27,13 @@ from app.repositories.company_repository import (
     CompanyProjectRepository,
 )
 from app.repositories.refresh_session_repository import RefreshSessionRepository
+from app.repositories.requirement_repository import RequirementRepository
 from app.repositories.tender_repository import DocumentRepository, TenderRepository
 from app.repositories.user_repository import UserRepository
 from app.services.analysis_service import AnalysisService
 from app.services.auth_service import AuthService, ClientContext
 from app.services.company_service import CompanyService
+from app.services.requirement_service import RequirementService
 from app.services.tender_service import TenderService
 from app.storage.base import StorageBackend
 from app.storage.local import LocalStorage
@@ -135,6 +137,16 @@ def get_analysis_service(
 
 
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
+
+
+def get_requirement_service(session: SessionDep) -> RequirementService:
+    return RequirementService(
+        requirements=RequirementRepository(session),
+        analyses=AnalysisRepository(session),
+    )
+
+
+RequirementServiceDep = Annotated[RequirementService, Depends(get_requirement_service)]
 
 
 async def get_current_user(

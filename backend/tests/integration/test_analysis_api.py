@@ -15,7 +15,8 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.analysis import Analysis
-from tests.integration.factories import make_pdf
+from tests.integration.conftest import ProviderHolder
+from tests.integration.factories import make_pdf, scripted_extraction
 from tests.integration.test_company_api import Signed, sign_up
 from tests.integration.test_tender_api import create_tender, pdf_upload
 
@@ -27,6 +28,12 @@ DOC = make_pdf(
     "Liquidated damages of one percent per week of delay shall apply, capped at ten percent "
     "of the total contract value stated in the commercial schedule.",
 )
+
+
+@pytest.fixture(autouse=True)
+def _install_mock_provider(provider_holder: ProviderHolder) -> None:
+    """Every analysis in this module runs the AI stages against a scripted mock provider."""
+    provider_holder.provider = scripted_extraction()
 
 
 async def tender_with_document(client: AsyncClient, actor: Signed, content: bytes = DOC) -> str:

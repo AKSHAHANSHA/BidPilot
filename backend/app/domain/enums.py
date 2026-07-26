@@ -134,6 +134,53 @@ class AnalysisStage(VocabularyEnum):
     COMPLETED = "completed"
 
 
+class RequirementCategory(VocabularyEnum):
+    """Requirement taxonomy (`docs/01_PRODUCT_REQUIREMENTS.md` §5)."""
+
+    LEGAL_REGISTRATION = "legal_registration"
+    CERTIFICATION = "certification"
+    TECHNICAL_CAPABILITY = "technical_capability"
+    EXPERIENCE = "experience"
+    STAFFING = "staffing"
+    FINANCIAL = "financial"
+    INSURANCE = "insurance"
+    BID_BOND_GUARANTEE = "bid_bond_guarantee"
+    SUBMISSION_INSTRUCTION = "submission_instruction"
+    DEADLINE = "deadline"
+    COMMERCIAL = "commercial"
+    CONTRACTUAL = "contractual"
+    HEALTH_SAFETY_ENVIRONMENT = "health_safety_environment"
+    DATA_CYBERSECURITY = "data_cybersecurity"
+    OTHER = "other"
+
+
+class RequirementObligation(VocabularyEnum):
+    MANDATORY = "mandatory"
+    OPTIONAL = "optional"
+    UNCERTAIN = "uncertain"
+
+
+class ComplianceStatus(VocabularyEnum):
+    """Machine or human compliance verdict (`docs/01` §5)."""
+
+    UNREVIEWED = "unreviewed"
+    MET = "met"
+    PARTIALLY_MET = "partially_met"
+    NOT_MET = "not_met"
+    NEEDS_CLARIFICATION = "needs_clarification"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class CitationMatchMethod(VocabularyEnum):
+    """How a citation quote was verified against its source page (Phase 7)."""
+
+    EXACT = "exact"
+    NORMALIZED = "normalized"
+    FUZZY = "fuzzy"
+    UNVERIFIED = "unverified"
+    REJECTED = "rejected"
+
+
 class AnalysisErrorCode(VocabularyEnum):
     """Safe, machine-readable failure reason. Developer detail lives in logs only."""
 

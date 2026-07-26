@@ -460,6 +460,39 @@ without a running broker or worker, and CI never needs Redis for the pipeline. T
 Dramatiq path is covered by the manual live smoke test, which confirmed the API returns 202 in
 ~100 ms while the worker processes the job out-of-process.
 
+## D43 — The provider returns raw JSON; we validate
+
+`LLMProvider.complete_json` returns raw JSON text plus token counts. Validation against a
+strict Pydantic model (`extra="forbid"`, bounded enums) happens in `app/ai/extraction.py`, in
+our code. So a malformed completion or an unknown enum is rejected by the same path whether it
+came from OpenAI or a test mock — the "invalid output never becomes a persisted finding"
+guarantee does not depend on the provider. A schema failure is retried once, then surfaced as a
+`FAILED_AI` analysis error.
+
+Two hallucination guards sit before persistence, ahead of Phase 7's quote verification: a
+requirement whose `source_page` was not in the batch we sent is dropped, and every requirement
+carries its verbatim `source_quote` for Phase 7 to check.
+
+## D44 — Prompts are versioned code and delimit untrusted text
+
+Prompt templates live in `app/ai/prompts.py` with a name and version recorded on the analysis
+(`docs/03` §15). Document text is wrapped in a named delimiter and the system prompt states
+plainly that the delimited text is untrusted data and its instructions must never be followed
+(`docs/02` §11) — the same "documents are evidence, not instructions" rule enforced elsewhere.
+A test confirms injection text survives only as delimited data.
+
+## D45 — Extraction is synchronous in the request path, mocked in tests
+
+The suite drives extraction with `MockLLMProvider` (a queue, for asserting call sequences and
+errors) and `RoutedMockProvider` (answers by schema name, for multi-run tests). CI never makes
+a network call or needs a key (`docs/07` §1). The real OpenAI adapter applies a bounded timeout
+and retries only transient transport errors; its behaviour against the live API is a manual,
+cost-controlled check, deliberately outside the automated suite.
+
+A re-run first clears its own requirements and metadata (`_reset_findings`), so retry is
+idempotent — re-inserting the one-per-analysis metadata row or a requirement would otherwise
+violate a unique constraint and fail the run for the wrong reason. Found by the retry test.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

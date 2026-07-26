@@ -149,6 +149,66 @@ def make_pdf(*page_texts: str) -> bytes:
     return bytes(content)
 
 
+def requirement_batch_json(count: int = 12, *, source_page: int = 1) -> str:
+    """A valid RequirementBatch payload with `count` requirements, for the mock provider.
+
+    Quotes are phrases that appear in the DOC fixture pages so Phase 7 verification will pass.
+    """
+    import json
+
+    quotes = [
+        "The bidder shall hold a valid UAE trade licence",
+        "maintain ISO 9001 certification",
+        "Liquidated damages of one percent per week",
+    ]
+    categories = ["legal_registration", "certification", "contractual"]
+    obligations = ["mandatory", "mandatory", "uncertain"]
+    reqs = []
+    for i in range(count):
+        j = i % len(quotes)
+        reqs.append(
+            {
+                "original_text": f"Requirement {i + 1}: {quotes[j]}.",
+                "normalized_text": f"The bidder must satisfy requirement {i + 1}.",
+                "category": categories[j],
+                "obligation": obligations[j],
+                "expected_evidence": ["trade licence", "certificate"],
+                "source_page": source_page,
+                "source_quote": quotes[j],
+                "confidence": 0.9,
+            }
+        )
+    return json.dumps({"requirements": reqs})
+
+
+def metadata_json(**overrides: object) -> str:
+    import json
+
+    payload = {
+        "buyer": "Fictional Government Entity (demo)",
+        "reference": "RFP-DEMO-2026-014",
+        "submission_deadline_text": "30 August 2026",
+        "contract_duration": "24 months",
+        "estimated_value": "8,000,000",
+        "currency": "AED",
+        "summary": "Integrated FM services for a government campus.",
+    }
+    payload.update(overrides)  # type: ignore[arg-type]
+    return json.dumps(payload)
+
+
+def scripted_extraction(requirement_count: int = 12) -> object:
+    """A schema-routed mock so any number of analysis runs get consistent extraction output."""
+    from app.ai.providers.mock import RoutedMockProvider
+
+    return RoutedMockProvider(
+        {
+            "tender_metadata": metadata_json(),
+            "requirement_batch": requirement_batch_json(requirement_count),
+        }
+    )
+
+
 def iso(offset_days: int) -> str:
     return (datetime.now(tz=UTC).date() + timedelta(days=offset_days)).isoformat()
 

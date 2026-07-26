@@ -23,6 +23,7 @@ dependencies = [
     "python-multipart>=0.0.18",
     "pymupdf>=1.25",
     "dramatiq[redis]>=1.17",
+    "openai>=1.55",
 ]
 
 # Dependencies for phases not yet implemented are deliberately absent:

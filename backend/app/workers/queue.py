@@ -34,12 +34,19 @@ class DramatiqJobQueue:
 
 
 class EagerJobQueue:
-    """Runs the pipeline inline against the given session. For tests and the offline demo."""
+    """Runs the pipeline inline against the given session. For tests and the offline demo.
 
-    def __init__(self, session: AsyncSession) -> None:
+    An optional `provider` is injected so tests drive extraction with a mock; without one, the
+    AI stages report a configuration failure rather than reaching for a real key.
+    """
+
+    def __init__(self, session: AsyncSession, provider: object | None = None) -> None:
         self._session = session
+        self._provider = provider
 
     async def enqueue_analysis(self, analysis_id: uuid.UUID) -> None:
+        from app.ai.providers.base import LLMProvider
         from app.workers.pipeline import run_analysis
 
-        await run_analysis(self._session, str(analysis_id))
+        provider: LLMProvider | None = self._provider  # type: ignore[assignment]
+        await run_analysis(self._session, str(analysis_id), provider=provider)

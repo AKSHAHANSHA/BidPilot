@@ -29,6 +29,7 @@ working until its verification commands have been run.
 | 3 | Tender CRUD, secure PDF upload, storage adapter, duplicate detection | **Complete** |
 | 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | **Complete** |
 | 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | **Complete** |
+| 6 | LLM adapter (OpenAI), structured extraction, versioned prompts, token/cost | **Complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |

@@ -14,7 +14,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 3 | Tender CRUD and PDF upload | Complete |
 | 4 | Page-aware PyMuPDF extraction, page records, quality scoring, unsupported detection | Complete |
 | 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | Complete |
-| 6 | Requirement extraction | Not started |
+| 6 | LLM adapter, structured extraction, prompts, token/cost, requirements API | Complete |
 | 7 | Citation verification | Not started |
 | 8 | Evidence matching and risks | Not started |
 | 9 | Readiness scoring and report | Not started |
@@ -363,8 +363,50 @@ POST /api/v1/analyses/{id}/retry        re-queue a failed run in place
 
 ---
 
-## Phase 6 — Requirement extraction (next)
+## Phase 6 — Requirement extraction
 
-Not started. Provider-neutral LLM adapter (OpenAI primary), strict Pydantic outputs, prompt
-versioning, batched requirement extraction, token/cost tracking. Provider calls are mocked in
-the normal suite; live calls are manual and cost-controlled.
+**Complete.** Provider-neutral `LLMProvider` protocol with an OpenAI structured-output adapter
+and scriptable/schema-routed mocks; strict Pydantic structured models validated in our code;
+versioned prompts that delimit untrusted document text; batched requirement extraction with a
+hallucinated-page guard; `Requirement`/`RequirementCitation`/`TenderMetadata` persistence
+(migration `0007`); token and estimated-cost tracking on the analysis; and the requirements read
+API. Two new pipeline stages (`extracting_metadata`, `extracting_requirements`). Citations are
+stored `unverified` — Phase 7 verifies them (D43-D45).
+
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (82 files), **227 unit/API tests** |
+| `./make.ps1 test-integration` | **199 passed**, provider fully mocked |
+| `alembic upgrade head` / `alembic check` | head `0007`, no drift (autogenerate FK ordering reviewed) |
+| `./make.ps1 openapi` | 26 paths |
+
+**Totals: 426 tests — 227 unit/API, 199 integration.** Exit test met: ≥10 structured
+requirements extracted and persisted with citations from a sample tender (via the mock
+provider).
+
+### Endpoints
+
+```text
+GET /api/v1/analyses/{id}/requirements   filter by category/obligation/status/citation_verified
+GET /api/v1/requirements/{id}            one requirement with its citations
+```
+
+### Not done / limitations
+
+- **Live OpenAI smoke test is pending your API key.** The suite mocks the provider entirely and
+  the identical pipeline is exercised end-to-end through the eager queue; the real-provider path
+  (OpenAIProvider → live API) has not been run. This is explicitly incomplete until a key is
+  supplied — not claimed as verified.
+- Anthropic adapter deliberately not built (optional; would complicate the primary path).
+- Metadata is stored as extracted text (e.g. deadline as a string); parsing it into typed
+  fields for deadline scoring happens in Phase 9.
+
+---
+
+## Phase 7 — Citation verification (next)
+
+Not started. Exact + normalized quote matching against the cited page, bounded fuzzy fallback,
+one correction retry, and rejection of unsupported material claims. Flips `citation_verified`
+and populates `match_method`/`match_score`.

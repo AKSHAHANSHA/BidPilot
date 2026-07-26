@@ -20,9 +20,22 @@ from app.models.document import Document
 from app.models.document_page import DocumentPage
 from app.models.tender import Tender
 from app.workers.pipeline import run_analysis
-from tests.integration.factories import make_user
+from tests.integration.factories import make_user, metadata_json, requirement_batch_json
 
 pytestmark = pytest.mark.integration
+
+
+def _provider() -> object:
+    """A schema-routed mock. Phase 6 does not verify quotes (Phase 7 does), and source_page 1
+    is valid for these single-page fixtures, so the requirements persist."""
+    from app.ai.providers.mock import RoutedMockProvider
+
+    return RoutedMockProvider(
+        {
+            "tender_metadata": metadata_json(),
+            "requirement_batch": requirement_batch_json(12),
+        }
+    )
 
 
 async def _tender(session: AsyncSession, user_id: object) -> Tender:
@@ -91,7 +104,7 @@ async def test_pipeline_completes_and_records_provenance(db_session: AsyncSessio
     doc = await _document(db_session, user_id=user.id, tender_id=tender.id)
     analysis = await _analysis(db_session, user_id=user.id, tender_id=tender.id, doc_id=doc.id)
 
-    await run_analysis(db_session, str(analysis.id))
+    await run_analysis(db_session, str(analysis.id), provider=_provider())
     await db_session.refresh(analysis)
 
     assert analysis.status == AnalysisStatus.COMPLETED.value
@@ -99,7 +112,7 @@ async def test_pipeline_completes_and_records_provenance(db_session: AsyncSessio
     assert analysis.attempt_count == 1
     assert analysis.started_at is not None
     assert analysis.completed_at >= analysis.started_at
-    assert "pages" in (analysis.summary or "")
+    assert "requirements extracted" in (analysis.summary or "")
 
 
 async def test_pipeline_fails_validation_without_a_document(db_session: AsyncSession) -> None:
@@ -141,7 +154,7 @@ async def test_pipeline_is_idempotent_on_a_terminal_analysis(db_session: AsyncSe
     doc = await _document(db_session, user_id=user.id, tender_id=tender.id)
     analysis = await _analysis(db_session, user_id=user.id, tender_id=tender.id, doc_id=doc.id)
 
-    await run_analysis(db_session, str(analysis.id))
+    await run_analysis(db_session, str(analysis.id), provider=_provider())
     await db_session.refresh(analysis)
     first_completed = analysis.completed_at
     first_attempts = analysis.attempt_count

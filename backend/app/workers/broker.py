@@ -32,13 +32,15 @@ def run_analysis_actor(analysis_id: str) -> None:
     A fresh session per invocation, disposed afterwards, so a retry never reuses a connection
     bound to a dead event loop.
     """
+    from app.ai.providers.openai_provider import OpenAIProvider
     from app.core.database import dispose_engine, get_sessionmaker
     from app.workers.pipeline import run_analysis
 
     async def _run() -> None:
+        provider = OpenAIProvider(_settings)
         factory = get_sessionmaker()
         async with factory() as session:
-            await run_analysis(session, analysis_id)
+            await run_analysis(session, analysis_id, provider=provider)
         await dispose_engine()
 
     asyncio.run(_run())
