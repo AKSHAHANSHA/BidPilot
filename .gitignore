@@ -46,3 +46,6 @@ backend/eval/reports/evaluation_*
 frontend/test-results/
 frontend/playwright-report/
 frontend/.playwright/
+
+# Local Browser-pane dev-server config (machine-specific)
+.claude/launch.json
