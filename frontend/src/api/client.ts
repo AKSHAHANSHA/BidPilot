@@ -60,11 +60,24 @@ async function refreshOnce(): Promise<boolean> {
   return refreshing;
 }
 
+// Requests are cloned here (before the body is sent, so the clone's body stream is still
+// intact) and kept only long enough to retry once if the response comes back 401 — an expired
+// access token, not a rejected credential. Retrying with a stale clone after a genuine auth
+// failure just reproduces the same 401, which is the correct outcome.
+const pendingForRetry = new Map<string, Request>();
+
 const authMiddleware: Middleware = {
-  async onRequest({ request }) {
+  async onRequest({ id, request }) {
     if (accessToken) request.headers.set("Authorization", `Bearer ${accessToken}`);
-    request.headers.set("credentials", "include");
+    pendingForRetry.set(id, request.clone());
     return request;
+  },
+  async onResponse({ id, response }) {
+    const retry = pendingForRetry.get(id);
+    pendingForRetry.delete(id);
+    if (response.status !== 401 || !retry || !(await refreshOnce())) return undefined;
+    if (accessToken) retry.headers.set("Authorization", `Bearer ${accessToken}`);
+    return fetch(retry);
   },
 };
 
@@ -72,21 +85,23 @@ export const api = createClient<paths>({ baseUrl: BASE, credentials: "include" }
 api.use(authMiddleware);
 
 /**
- * A fetch wrapper that transparently refreshes once on 401. openapi-fetch middleware cannot
- * easily retry, so auth-sensitive calls that must survive an expired access token go through
- * this helper; most calls simply surface the 401 to TanStack Query, which triggers a refresh
- * via the app's error handling.
+ * For the few call sites that use raw `fetch` instead of the typed client (multipart uploads,
+ * which openapi-fetch handles awkwardly). Applies the same refresh-once-on-401 behavior.
  */
-export async function withRefresh<T>(call: () => Promise<{ response: Response; data?: T; error?: unknown }>): Promise<{
-  response: Response;
-  data?: T;
-  error?: unknown;
-}> {
-  let result = await call();
-  if (result.response.status === 401 && (await refreshOnce())) {
-    result = await call();
+export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const withAuth = (): RequestInit => ({
+    ...init,
+    credentials: "include",
+    headers: {
+      ...(init.headers as Record<string, string> | undefined),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+  let res = await fetch(`${BASE}${path}`, withAuth());
+  if (res.status === 401 && (await refreshOnce())) {
+    res = await fetch(`${BASE}${path}`, withAuth());
   }
-  return result;
+  return res;
 }
 
 /** RFC 7807 problem detail shape the backend returns. */

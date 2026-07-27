@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, getAccessToken, problemMessage } from "../api/client";
+import { api, authedFetch, problemMessage } from "../api/client";
 import { Button, Card, Field, ProblemAlert } from "../components/ui";
 
 export function NewTenderPage() {
@@ -33,11 +33,9 @@ export function NewTenderPage() {
       if (file) {
         const form = new FormData();
         form.append("file", file);
-        const res = await fetch(`/api/v1/tenders/${tenderId}/documents`, {
+        const res = await authedFetch(`/api/v1/tenders/${tenderId}/documents`, {
           method: "POST",
           body: form,
-          credentials: "include",
-          headers: bearer(),
         });
         if (!res.ok) {
           const problem = await res.json().catch(() => ({}));
@@ -98,11 +96,4 @@ export function NewTenderPage() {
       </Card>
     </div>
   );
-}
-
-
-// The multipart upload uses raw fetch, so the bearer token is attached explicitly.
-function bearer(): Record<string, string> {
-  const token = getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }

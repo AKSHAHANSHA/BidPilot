@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, setAccessToken, problemMessage } from "../api/client";
+import { api, onAuthChange, setAccessToken, problemMessage } from "../api/client";
 
 interface User {
   id: string;
@@ -50,6 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
+  }, []);
+
+  // If a background refresh (triggered by an expired access token on some later request)
+  // definitively fails — the refresh cookie itself is gone or invalid — clear the signed-in
+  // state so route protection sends the user back to the sign-in screen instead of leaving
+  // stale UI that will keep failing.
+  useEffect(() => {
+    return onAuthChange((token) => {
+      if (token === null) setUser((prev) => (prev ? null : prev));
+    });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
