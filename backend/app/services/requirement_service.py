@@ -42,3 +42,18 @@ class RequirementService:
         if requirement is None:
             raise NotFoundError("Requirement not found.")
         return requirement
+
+    async def review_requirement(
+        self,
+        *,
+        user_id: uuid.UUID,
+        requirement_id: uuid.UUID,
+        reviewed_status: str,
+        reason: str,
+    ) -> Requirement:
+        """Apply a human override. The original machine_status is preserved (`docs/03` §11)."""
+        requirement = await self.get_requirement(user_id=user_id, requirement_id=requirement_id)
+        requirement.reviewed_status = reviewed_status
+        requirement.review_reason = reason
+        await self.requirements.flush()
+        return requirement

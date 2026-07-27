@@ -11,8 +11,10 @@ from app.models.company_profile import CompanyProfile
 from app.models.company_project import CompanyProject
 from app.models.document import Document
 from app.models.document_page import DocumentPage
+from app.models.evidence_match import RequirementEvidenceMatch
 from app.models.refresh_session import RefreshSession
 from app.models.requirement import Requirement, RequirementCitation
+from app.models.risk import RiskCitation, RiskFinding
 from app.models.tender import Tender
 from app.models.tender_metadata import TenderMetadata
 from app.models.user import User
@@ -27,6 +29,9 @@ __all__ = [
     "RefreshSession",
     "Requirement",
     "RequirementCitation",
+    "RequirementEvidenceMatch",
+    "RiskCitation",
+    "RiskFinding",
     "Tender",
     "TenderMetadata",
     "User",

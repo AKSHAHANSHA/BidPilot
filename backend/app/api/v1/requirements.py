@@ -14,6 +14,7 @@ from app.domain.enums import ComplianceStatus, RequirementCategory, RequirementO
 from app.repositories.requirement_repository import RequirementFilters
 from app.schemas.common import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT, Page
 from app.schemas.requirement import RequirementRead
+from app.schemas.risk import ReviewRequest
 
 router = APIRouter(tags=["requirements"])
 
@@ -76,5 +77,30 @@ async def get_requirement(
 ) -> RequirementRead:
     requirement = await service.get_requirement(
         user_id=current_user.id, requirement_id=requirement_id
+    )
+    return RequirementRead.model_validate(requirement)
+
+
+@router.patch(
+    "/requirements/{requirement_id}/review",
+    response_model=RequirementRead,
+    summary="Override a requirement's compliance status",
+    description=(
+        "Human review. A reason is mandatory; the machine status is preserved and only the "
+        "reviewed status changes."
+    ),
+    responses={**_OWNED, HTTPStatus.UNPROCESSABLE_ENTITY: {"model": ProblemDetail}},
+)
+async def review_requirement(
+    requirement_id: RequirementId,
+    payload: ReviewRequest,
+    current_user: CurrentUser,
+    service: RequirementServiceDep,
+) -> RequirementRead:
+    requirement = await service.review_requirement(
+        user_id=current_user.id,
+        requirement_id=requirement_id,
+        reviewed_status=payload.reviewed_status.value,
+        reason=payload.reason,
     )
     return RequirementRead.model_validate(requirement)

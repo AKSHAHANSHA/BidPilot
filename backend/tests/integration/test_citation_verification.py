@@ -73,11 +73,13 @@ def requirements_with_mixed_citations() -> str:
 @pytest.fixture(autouse=True)
 def _mock_provider(provider_holder: ProviderHolder) -> None:
     from app.ai.providers.mock import RoutedMockProvider
+    from tests.integration.factories import risk_batch_json
 
     provider_holder.provider = RoutedMockProvider(
         {
             "tender_metadata": metadata_json(),
             "requirement_batch": requirements_with_mixed_citations(),
+            "risk_batch": risk_batch_json(),
         }
     )
 

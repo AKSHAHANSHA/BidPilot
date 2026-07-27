@@ -512,6 +512,35 @@ citation, and a deliberately hallucinated quote is excluded from the canonical s
 `difflib.SequenceMatcher` (stdlib) does the fuzzy work — no new dependency for a bounded,
 explainable similarity check.
 
+## D47 — Deterministic matching first; absence is never proof
+
+Evidence matching (`app/domain/matching.py`) is pure Python over the requirement and the
+company's verified evidence. Exact rules run first: a requirement category maps to an evidence
+category, and a candidate with overlapping title/tag terms is `met`; the right category with no
+overlap is `partially_met`; nothing on file is `not_met` — worded explicitly as "reflects the
+current profile, not a proven absence" (`docs/03` §9). Categories with no deterministic mapping
+(technical capability, staffing) return `needs_clarification` flagged non-deterministic, so a
+semantic assist can be layered later without changing the contract. Only verified evidence
+counts, and only citation-verified (canonical) requirements are matched.
+
+The match sets `machine_status`; human review sets `reviewed_status` separately, so the
+machine's verdict is always preserved alongside the override.
+
+## D48 — Risks are cited, advisory, and verified like requirements
+
+Risk extraction reuses the same structured-output + citation-verification machinery as
+requirements: each risk carries a verbatim quote that is checked against its page, and the
+prompt forbids legal conclusions, requiring advisory language ("requires review", "may create
+exposure") per `docs/03` §10. A risk with an unverifiable quote is persisted but not canonical,
+exactly like a requirement.
+
+## D49 — Human review requires a reason and preserves the machine result
+
+`PATCH /requirements/{id}/review` and `PATCH /risks/{id}/review` take a mandatory reason
+(min length enforced in the schema) and a new reviewed status. They never touch
+`machine_status`/the machine finding — the original is kept for audit and explainability
+(`docs/03` §11, CLAUDE.md). A review without a reason is a 422.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

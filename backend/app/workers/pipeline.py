@@ -26,6 +26,7 @@ from app.ai.extraction import (
     TokenUsage,
     extract_metadata,
     extract_requirements,
+    extract_risks,
 )
 from app.ai.providers.base import LLMProvider, LLMProviderError
 from app.core.logging import get_logger, user_id_var
@@ -37,11 +38,17 @@ from app.domain.enums import (
     AnalysisStatus,
     ComplianceStatus,
     DocumentExtractionStatus,
+    MatchStatus,
 )
+from app.domain.matching import EvidenceFact, RequirementFact, match_requirement
 from app.models.analysis import Analysis
+from app.models.company_evidence import CompanyEvidence
+from app.models.company_profile import CompanyProfile
 from app.models.document import Document
 from app.models.document_page import DocumentPage
+from app.models.evidence_match import RequirementEvidenceMatch
 from app.models.requirement import Requirement, RequirementCitation
+from app.models.risk import RiskCitation, RiskFinding
 from app.models.tender_metadata import TenderMetadata
 
 logger = get_logger(__name__)
@@ -278,8 +285,158 @@ async def stage_verifying_citations(ctx: PipelineContext) -> None:
     )
 
 
-#: Ordered pipeline. Phases 8-9 insert matching, risks, scoring, and report generation between
-#: citation verification and COMPLETED.
+async def stage_matching_evidence(ctx: PipelineContext) -> None:
+    """Match each requirement against the owner's verified company evidence.
+
+    Deterministic rules only in this phase (`docs/03` §9); a semantic assist for inconclusive
+    categories is future work. Absence yields `not_met`/`needs_clarification`, never a claim the
+    company lacks the capability. No provider call — this is pure domain logic over stored rows.
+    """
+    await _advance(ctx, AnalysisStage.MATCHING_EVIDENCE, "Matching requirements to evidence.")
+
+    profile = (
+        await ctx.session.execute(
+            select(CompanyProfile).where(CompanyProfile.owner_user_id == ctx.analysis.owner_user_id)
+        )
+    ).scalar_one_or_none()
+
+    evidence_facts: list[EvidenceFact] = []
+    if profile is not None:
+        evidence_rows = (
+            (
+                await ctx.session.execute(
+                    select(CompanyEvidence).where(CompanyEvidence.company_profile_id == profile.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        evidence_facts = [
+            EvidenceFact(
+                id=str(e.id),
+                category=e.category,
+                title=e.title,
+                tags=tuple(e.tags),
+                is_verified=e.verification_status == "verified",
+            )
+            for e in evidence_rows
+        ]
+
+    # Only canonical (citation-verified) requirements are matched; unverified ones are not
+    # treated as material findings.
+    requirements = (
+        (
+            await ctx.session.execute(
+                select(Requirement).where(
+                    Requirement.analysis_id == ctx.analysis.id,
+                    Requirement.citation_verified.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    counts: dict[str, int] = {}
+    for requirement in requirements:
+        outcome = match_requirement(
+            RequirementFact(
+                category=requirement.category,
+                normalized_text=requirement.normalized_text,
+                expected_evidence=tuple(requirement.expected_evidence),
+            ),
+            evidence_facts,
+        )
+        requirement.machine_status = _match_to_compliance(outcome.status)
+        ctx.session.add(
+            RequirementEvidenceMatch(
+                owner_user_id=ctx.analysis.owner_user_id,
+                requirement_id=requirement.id,
+                status=outcome.status.value,
+                explanation=outcome.explanation,
+                matched_evidence_ids=list(outcome.matched_evidence_ids),
+                missing_evidence=list(outcome.missing_evidence),
+                confidence=outcome.confidence,
+                is_deterministic=outcome.deterministic,
+            )
+        )
+        counts[outcome.status.value] = counts.get(outcome.status.value, 0) + 1
+
+    logger.info("evidence_matched", extra={"analysis_id": str(ctx.analysis.id), "counts": counts})
+
+
+_MATCH_TO_COMPLIANCE = {
+    MatchStatus.MET: ComplianceStatus.MET,
+    MatchStatus.PARTIALLY_MET: ComplianceStatus.PARTIALLY_MET,
+    MatchStatus.NOT_MET: ComplianceStatus.NOT_MET,
+    MatchStatus.NEEDS_CLARIFICATION: ComplianceStatus.NEEDS_CLARIFICATION,
+    MatchStatus.NOT_APPLICABLE: ComplianceStatus.NOT_APPLICABLE,
+}
+
+
+def _match_to_compliance(status: MatchStatus) -> str:
+    return _MATCH_TO_COMPLIANCE[status].value
+
+
+async def stage_analysing_risks(ctx: PipelineContext) -> None:
+    """Extract risk clauses, then verify each citation exactly as requirements are verified."""
+    await _advance(ctx, AnalysisStage.ANALYSING_RISKS, "Identifying contractual risks.")
+    provider = _require_provider(ctx)
+    assert ctx.pages is not None and ctx.document is not None  # noqa: S101
+    try:
+        result = await extract_risks(provider, ctx.pages)
+    except ExtractionError as exc:
+        raise StageError(AnalysisErrorCode.FAILED_AI, str(exc)) from exc
+    except LLMProviderError as exc:
+        raise StageError(AnalysisErrorCode.FAILED_AI, str(exc)) from exc
+    ctx.usage.add(result.usage.input_tokens, result.usage.output_tokens)
+
+    page_text = {p.page_number: p.text for p in ctx.pages}
+    verified_count = 0
+    for extracted in result.risks:
+        verification = verify_quote(
+            quote=extracted.source_quote, page_text=page_text.get(extracted.source_page, "")
+        )
+        risk = RiskFinding(
+            owner_user_id=ctx.analysis.owner_user_id,
+            analysis_id=ctx.analysis.id,
+            risk_type=extracted.risk_type.value,
+            severity=extracted.severity.value,
+            summary=extracted.summary,
+            why_it_matters=extracted.why_it_matters,
+            suggested_action=extracted.suggested_action,
+            confidence=extracted.confidence,
+            citation_verified=verification.verified,
+        )
+        ctx.session.add(risk)
+        await ctx.session.flush()
+        ctx.session.add(
+            RiskCitation(
+                owner_user_id=ctx.analysis.owner_user_id,
+                risk_id=risk.id,
+                document_id=ctx.document.id,
+                page_number=extracted.source_page,
+                source_quote=extracted.source_quote,
+                verified=verification.verified,
+                match_method=verification.method.value,
+                match_score=verification.score,
+            )
+        )
+        if verification.verified:
+            verified_count += 1
+
+    logger.info(
+        "risks_analysed",
+        extra={
+            "analysis_id": str(ctx.analysis.id),
+            "risks": len(result.risks),
+            "verified": verified_count,
+        },
+    )
+
+
+#: Ordered pipeline. Phase 9 inserts scoring and report generation between risk analysis and
+#: COMPLETED.
 PIPELINE: tuple[tuple[AnalysisStage, StageHandler], ...] = (
     (AnalysisStage.VALIDATING, stage_validating),
     (AnalysisStage.EXTRACTING_TEXT, stage_extracting_text),
@@ -287,14 +444,21 @@ PIPELINE: tuple[tuple[AnalysisStage, StageHandler], ...] = (
     (AnalysisStage.EXTRACTING_METADATA, stage_extracting_metadata),
     (AnalysisStage.EXTRACTING_REQUIREMENTS, stage_extracting_requirements),
     (AnalysisStage.VERIFYING_CITATIONS, stage_verifying_citations),
+    (AnalysisStage.MATCHING_EVIDENCE, stage_matching_evidence),
+    (AnalysisStage.ANALYSING_RISKS, stage_analysing_risks),
 )
 
 
 async def _reset_findings(session: AsyncSession, analysis_id: uuid.UUID) -> None:
-    """Delete an analysis's derived records so a re-run starts clean."""
+    """Delete an analysis's derived records so a re-run starts clean.
+
+    Evidence matches cascade from requirements and risk citations from risks, so deleting the
+    parents is enough.
+    """
     from sqlalchemy import delete
 
     await session.execute(delete(Requirement).where(Requirement.analysis_id == analysis_id))
+    await session.execute(delete(RiskFinding).where(RiskFinding.analysis_id == analysis_id))
     await session.execute(delete(TenderMetadata).where(TenderMetadata.analysis_id == analysis_id))
 
 

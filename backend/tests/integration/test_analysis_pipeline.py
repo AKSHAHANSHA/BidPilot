@@ -20,20 +20,25 @@ from app.models.document import Document
 from app.models.document_page import DocumentPage
 from app.models.tender import Tender
 from app.workers.pipeline import run_analysis
-from tests.integration.factories import make_user, metadata_json, requirement_batch_json
+from tests.integration.factories import (
+    make_user,
+    metadata_json,
+    requirement_batch_json,
+    risk_batch_json,
+)
 
 pytestmark = pytest.mark.integration
 
 
 def _provider() -> object:
-    """A schema-routed mock. Phase 6 does not verify quotes (Phase 7 does), and source_page 1
-    is valid for these single-page fixtures, so the requirements persist."""
+    """A schema-routed mock covering every AI stage the pipeline now runs."""
     from app.ai.providers.mock import RoutedMockProvider
 
     return RoutedMockProvider(
         {
             "tender_metadata": metadata_json(),
             "requirement_batch": requirement_batch_json(12),
+            "risk_batch": risk_batch_json(),
         }
     )
 

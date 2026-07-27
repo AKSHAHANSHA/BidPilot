@@ -17,12 +17,14 @@ from dataclasses import dataclass, field
 from pydantic import ValidationError
 
 from app.ai.cost import estimate_cost
-from app.ai.prompts import METADATA_PROMPT, REQUIREMENTS_PROMPT
+from app.ai.prompts import METADATA_PROMPT, REQUIREMENTS_PROMPT, RISKS_PROMPT
 from app.ai.providers.base import LLMProvider, LLMProviderError
 from app.ai.structured_models import (
     ExtractedMetadata,
     ExtractedRequirement,
+    ExtractedRisk,
     RequirementBatch,
+    RiskBatch,
 )
 from app.core.logging import get_logger
 from app.models.document_page import DocumentPage
@@ -139,6 +141,47 @@ async def _extract_batch(provider: LLMProvider, pages: list[DocumentPage]) -> _P
     raise ExtractionError(
         f"The AI returned output that did not match the required schema: {last_error}"
     )
+
+
+@dataclass
+class RiskExtractionResult:
+    risks: list[ExtractedRisk] = field(default_factory=list)
+    usage: TokenUsage = field(default_factory=TokenUsage)
+
+
+async def extract_risks(provider: LLMProvider, pages: list[DocumentPage]) -> RiskExtractionResult:
+    """Extract risk clauses across batches, validating each response and dropping bad pages."""
+    result = RiskExtractionResult()
+    for batch in batch_pages(pages):
+        allowed = _valid_pages(batch)
+        user = RISKS_PROMPT.render_user(document_text=_render_batch(batch))
+        schema = RiskBatch.model_json_schema()
+
+        parsed: RiskBatch | None = None
+        last_error: Exception | None = None
+        for _attempt in range(2):
+            response = await provider.complete_json(
+                system=RISKS_PROMPT.system,
+                user=user,
+                schema=schema,
+                schema_name="risk_batch",
+            )
+            result.usage.add(response.input_tokens, response.output_tokens)
+            try:
+                parsed = RiskBatch.model_validate_json(response.content)
+                break
+            except ValidationError as exc:
+                last_error = exc
+                logger.warning("risk_batch_invalid")
+        if parsed is None:
+            raise ExtractionError(f"The AI returned invalid risk output: {last_error}")
+
+        for risk in parsed.risks:
+            if risk.source_page not in allowed:
+                logger.warning("risk_dropped_bad_page", extra={"claimed_page": risk.source_page})
+                continue
+            result.risks.append(risk)
+    return result
 
 
 @dataclass

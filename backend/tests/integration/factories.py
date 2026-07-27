@@ -197,6 +197,39 @@ def metadata_json(**overrides: object) -> str:
     return json.dumps(payload)
 
 
+def risk_batch_json(*, page: int = 2) -> str:
+    """A valid RiskBatch with one verifiable and one unverifiable clause."""
+    import json
+
+    return json.dumps(
+        {
+            "risks": [
+                {
+                    "risk_type": "liquidated_damages",
+                    "severity": "high",
+                    "summary": "Liquidated damages of one percent per week apply.",
+                    "why_it_matters": "This may create financial exposure and requires review.",
+                    "suggested_action": "Review the delay-damages cap before bidding.",
+                    "source_page": page,
+                    "source_quote": "Liquidated damages of one percent per week",
+                    "confidence": 0.9,
+                },
+                {
+                    "risk_type": "indemnity_liability",
+                    "severity": "medium",
+                    "summary": "An unlimited indemnity clause appears to be present.",
+                    "why_it_matters": "Unlimited liability may create exposure; requires review.",
+                    "suggested_action": "Seek a liability cap.",
+                    "source_page": page,
+                    # Not on the page — verification must reject this citation.
+                    "source_quote": "The contractor accepts unlimited liability for all losses",
+                    "confidence": 0.7,
+                },
+            ]
+        }
+    )
+
+
 def scripted_extraction(requirement_count: int = 12) -> object:
     """A schema-routed mock so any number of analysis runs get consistent extraction output."""
     from app.ai.providers.mock import RoutedMockProvider
@@ -205,6 +238,7 @@ def scripted_extraction(requirement_count: int = 12) -> object:
         {
             "tender_metadata": metadata_json(),
             "requirement_batch": requirement_batch_json(requirement_count),
+            "risk_batch": risk_batch_json(),
         }
     )
 

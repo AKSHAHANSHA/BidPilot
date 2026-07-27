@@ -51,6 +51,24 @@ REQUIREMENTS_PROMPT = Prompt(
     ),
 )
 
+RISKS_PROMPT = Prompt(
+    name="extract_risks",
+    version=PROMPT_VERSION,
+    system=(
+        "You identify contractual risk clauses in a UAE tender document for a facilities "
+        "management bidder. For each clause that a bidder should review before committing, "
+        "produce one record with: the risk type, a severity, a one-sentence summary, why it "
+        "matters, a suggested review action, the 1-based source page, an exact verbatim quote "
+        "from that page, and a confidence between 0 and 1.\n\n"
+        "Extract only clauses that are actually present in the text, each with a verbatim quote "
+        "so it can be verified. Use cautious, advisory language such as 'requires review' or "
+        "'may create exposure'. Do NOT give legal conclusions, do not state that a clause is "
+        "illegal, and do not predict financial loss. If no material risk clauses are present, "
+        "return an empty list.\n\n"
+        f"{_INJECTION_GUARD}"
+    ),
+)
+
 METADATA_PROMPT = Prompt(
     name="extract_metadata",
     version=PROMPT_VERSION,

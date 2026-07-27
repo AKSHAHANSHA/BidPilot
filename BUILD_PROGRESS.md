@@ -16,7 +16,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 5 | Dramatiq + Redis worker, analysis state machine, progress, retry, idempotency | Complete |
 | 6 | LLM adapter, structured extraction, prompts, token/cost, requirements API | Complete |
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | Complete |
-| 8 | Evidence matching and risks | Not started |
+| 8 | Deterministic evidence matching, risk extraction, human review | Complete |
 | 9 | Readiness scoring and report | Not started |
 | 10 | Frontend | Not started |
 | 11 | Evaluation and polish | Not started |
@@ -435,8 +435,52 @@ has an invalid citation; a hallucinated quote is excluded from the canonical set
 
 ---
 
-## Phase 8 — Evidence matching and risks (next)
+## Phase 8 — Evidence matching and risks
 
-Not started. Deterministic evidence matching first (exact certifications, dates, geography,
-numeric thresholds), semantic assistance second; project matching; risk-clause extraction with
-citations; confidence and human-review states.
+**Complete.** Deterministic evidence matching (`app/domain/matching.py`) sets each canonical
+requirement's `machine_status` against the company's verified evidence — absence is `not_met`,
+never proven-absent; unmapped categories defer to a future semantic assist. Risk-clause
+extraction reuses the structured-output + citation-verification machinery, with advisory-only
+language. Human-review endpoints for requirements and risks require a reason and preserve the
+machine verdict. Models: `RequirementEvidenceMatch`, `RiskFinding`, `RiskCitation` (migration
+`0008`). Pipeline stages: `matching_evidence`, `analysing_risks` (D47-D49).
+
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (90 files), **245 unit/API tests** |
+| `./make.ps1 test-integration` | **215 passed** |
+| `alembic upgrade head` / `alembic check` | head `0008`, no drift |
+| `./make.ps1 openapi` | 29 paths |
+
+**Totals: 460 tests — 245 unit/API, 215 integration.** Exit test met: ISO, geography, and
+experience-style examples produce explainable statuses; risks are cited and review requires a
+reason.
+
+Note: Docker Desktop had stopped between turns (a machine-level event); it was restarted and
+all verification ran against real PostgreSQL and Redis.
+
+### Endpoints
+
+```text
+GET   /api/v1/analyses/{id}/risks
+PATCH /api/v1/requirements/{id}/review    reason required; machine_status preserved
+PATCH /api/v1/risks/{id}/review           reason required
+```
+
+### Limitations
+
+- Semantic (LLM) matching for capability/staffing categories is deferred; those requirements
+  currently return `needs_clarification`. The structure to add it (non-deterministic outcome
+  flag) is in place.
+- Numeric/date threshold matching (e.g. contract value bands, geography strings) is coarse —
+  keyword overlap, not parsed comparisons. Adequate for the demo; a refinement target.
+- Live OpenAI extraction (requirements + risks) remains pending your key, as in Phase 6.
+
+---
+
+## Phase 9 — Readiness scoring and report (next)
+
+Not started. Versioned deterministic scoring across the six dimensions, hard blockers, decision
+label, narrative report from validated records only, and human override of the readiness label.

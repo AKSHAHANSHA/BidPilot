@@ -2625,6 +2625,185 @@
         "title": "RevenueRange",
         "type": "string"
       },
+      "ReviewRequest": {
+        "description": "A human override of a machine verdict.\n\nA reason is mandatory (`docs/03` \u00a711 / CLAUDE.md): an override must be justified and the\noriginal machine result is preserved (`machine_status` is never touched by review).",
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "reviewed_status": {
+            "$ref": "#/components/schemas/ComplianceStatus"
+          }
+        },
+        "required": [
+          "reviewed_status",
+          "reason"
+        ],
+        "title": "ReviewRequest",
+        "type": "object"
+      },
+      "RiskCitationRead": {
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "match_method": {
+            "$ref": "#/components/schemas/CitationMatchMethod"
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "source_quote": {
+            "title": "Source Quote",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "page_number",
+          "source_quote",
+          "verified",
+          "match_method",
+          "match_score"
+        ],
+        "title": "RiskCitationRead",
+        "type": "object"
+      },
+      "RiskRead": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "citation_verified": {
+            "title": "Citation Verified",
+            "type": "boolean"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/RiskCitationRead"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "review_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Reason"
+          },
+          "reviewed_status": {
+            "$ref": "#/components/schemas/ComplianceStatus"
+          },
+          "risk_type": {
+            "$ref": "#/components/schemas/RiskType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/RiskSeverity"
+          },
+          "suggested_action": {
+            "title": "Suggested Action",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "why_it_matters": {
+            "title": "Why It Matters",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "analysis_id",
+          "risk_type",
+          "severity",
+          "summary",
+          "why_it_matters",
+          "suggested_action",
+          "confidence",
+          "citation_verified",
+          "reviewed_status",
+          "review_reason",
+          "citations",
+          "created_at"
+        ],
+        "title": "RiskRead",
+        "type": "object"
+      },
+      "RiskSeverity": {
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "RiskSeverity",
+        "type": "string"
+      },
+      "RiskType": {
+        "description": "Risk-clause taxonomy (`docs/01` \u00a75).",
+        "enum": [
+          "liquidated_damages",
+          "indemnity_liability",
+          "termination",
+          "payment_terms",
+          "performance_guarantee",
+          "bid_bond",
+          "insurance",
+          "data_privacy",
+          "intellectual_property",
+          "unclear_scope",
+          "aggressive_deadline",
+          "other"
+        ],
+        "title": "RiskType",
+        "type": "string"
+      },
       "SessionRead": {
         "description": "A live refresh session, so a user can see where they are signed in.",
         "properties": {
@@ -3446,6 +3625,80 @@
         "summary": "Retry a failed analysis",
         "tags": [
           "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}/risks": {
+      "get": {
+        "operationId": "list_risks_api_v1_analyses__analysis_id__risks_get",
+        "parameters": [
+          {
+            "description": "Analysis identifier.",
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "description": "Analysis identifier.",
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RiskRead"
+                  },
+                  "title": "Response List Risks Api V1 Analyses  Analysis Id  Risks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List an analysis's risk findings (most severe first)",
+        "tags": [
+          "risks"
         ]
       }
     },
@@ -5216,6 +5469,168 @@
         "summary": "Get one requirement with its citations",
         "tags": [
           "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/{requirement_id}/review": {
+      "patch": {
+        "description": "Human review. A reason is mandatory; the machine status is preserved and only the reviewed status changes.",
+        "operationId": "review_requirement_api_v1_requirements__requirement_id__review_patch",
+        "parameters": [
+          {
+            "description": "Requirement identifier.",
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "description": "Requirement identifier.",
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Override a requirement's compliance status",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/risks/{risk_id}/review": {
+      "patch": {
+        "description": "A reason is mandatory. The machine finding is preserved.",
+        "operationId": "review_risk_api_v1_risks__risk_id__review_patch",
+        "parameters": [
+          {
+            "description": "Risk identifier.",
+            "in": "path",
+            "name": "risk_id",
+            "required": true,
+            "schema": {
+              "description": "Risk identifier.",
+              "format": "uuid",
+              "title": "Risk Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record a human review of a risk",
+        "tags": [
+          "risks"
         ]
       }
     },

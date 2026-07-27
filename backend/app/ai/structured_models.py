@@ -12,7 +12,12 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.enums import RequirementCategory, RequirementObligation
+from app.domain.enums import (
+    RequirementCategory,
+    RequirementObligation,
+    RiskSeverity,
+    RiskType,
+)
 
 
 class ExtractedRequirement(BaseModel):
@@ -34,6 +39,27 @@ class RequirementBatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     requirements: Annotated[list[ExtractedRequirement], Field(max_length=100)]
+
+
+class ExtractedRisk(BaseModel):
+    """One risk clause as the model reports it, before citation verification."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    risk_type: RiskType
+    severity: RiskSeverity
+    summary: Annotated[str, Field(min_length=1, max_length=1000)]
+    why_it_matters: Annotated[str, Field(min_length=1, max_length=1000)]
+    suggested_action: Annotated[str, Field(min_length=1, max_length=1000)]
+    source_page: Annotated[int, Field(ge=1)]
+    source_quote: Annotated[str, Field(min_length=1, max_length=2000)]
+    confidence: Annotated[float, Field(ge=0.0, le=1.0)]
+
+
+class RiskBatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    risks: Annotated[list[ExtractedRisk], Field(max_length=50)]
 
 
 class ExtractedMetadata(BaseModel):

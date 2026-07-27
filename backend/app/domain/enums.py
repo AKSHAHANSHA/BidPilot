@@ -181,6 +181,41 @@ class CitationMatchMethod(VocabularyEnum):
     REJECTED = "rejected"
 
 
+class RiskType(VocabularyEnum):
+    """Risk-clause taxonomy (`docs/01` §5)."""
+
+    LIQUIDATED_DAMAGES = "liquidated_damages"
+    INDEMNITY_LIABILITY = "indemnity_liability"
+    TERMINATION = "termination"
+    PAYMENT_TERMS = "payment_terms"
+    PERFORMANCE_GUARANTEE = "performance_guarantee"
+    BID_BOND = "bid_bond"
+    INSURANCE = "insurance"
+    DATA_PRIVACY = "data_privacy"
+    INTELLECTUAL_PROPERTY = "intellectual_property"
+    UNCLEAR_SCOPE = "unclear_scope"
+    AGGRESSIVE_DEADLINE = "aggressive_deadline"
+    OTHER = "other"
+
+
+class RiskSeverity(VocabularyEnum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class MatchStatus(VocabularyEnum):
+    """Evidence-match verdict. Absence is `needs_clarification`/`not_met`, never proof of a gap
+    (`docs/03` §9)."""
+
+    MET = "met"
+    PARTIALLY_MET = "partially_met"
+    NOT_MET = "not_met"
+    NEEDS_CLARIFICATION = "needs_clarification"
+    NOT_APPLICABLE = "not_applicable"
+
+
 class AnalysisErrorCode(VocabularyEnum):
     """Safe, machine-readable failure reason. Developer detail lives in logs only."""
 
