@@ -50,7 +50,7 @@ class MockLLMProvider:
         user: str,
         schema: dict[str, object],
         schema_name: str,
-        temperature: float = 0.0,
+        temperature: float | None = None,
     ) -> LLMResponse:
         self.calls.append({"system": system, "user": user, "schema_name": schema_name})
         if not self._responses:
@@ -88,7 +88,7 @@ class RoutedMockProvider:
         user: str,
         schema: dict[str, object],
         schema_name: str,
-        temperature: float = 0.0,
+        temperature: float | None = None,
     ) -> LLMResponse:
         self.calls.append({"schema_name": schema_name, "user": user})
         if schema_name not in self._content:

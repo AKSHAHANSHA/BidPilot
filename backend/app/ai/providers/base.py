@@ -40,9 +40,13 @@ class LLMProvider(Protocol):
         user: str,
         schema: dict[str, Any],
         schema_name: str,
-        temperature: float = 0.0,
+        temperature: float | None = None,
     ) -> LLMResponse:
         """Return a JSON completion constrained to `schema`.
+
+        `temperature` is omitted from the request when None — some models (e.g. the gpt-5
+        family) only accept their default. Determinism of the *score* does not depend on it;
+        scoring is pure Python, and structured-output strict mode already constrains the shape.
 
         Implementations must apply a bounded timeout and retry only transient transport
         failures; a schema/parse failure is the caller's to handle.

@@ -20,6 +20,33 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
+    """Adapt a Pydantic JSON schema to OpenAI structured-output strict mode.
+
+    OpenAI requires every object to list *all* its properties in `required` and to set
+    `additionalProperties: false`; optionality is expressed by a nullable type, not by omission
+    from `required`. Pydantic marks only fields without defaults as required, so this walks the
+    schema (including `$defs`) and fills `required` with every property key.
+    """
+    import copy
+
+    result = copy.deepcopy(schema)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object" and "properties" in node:
+                node["required"] = list(node["properties"].keys())
+                node["additionalProperties"] = False
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(result)
+    return result
+
+
 class OpenAIProvider:
     def __init__(self, settings: Settings) -> None:
         api_key, model = settings.require_openai()
@@ -40,7 +67,7 @@ class OpenAIProvider:
         user: str,
         schema: dict[str, Any],
         schema_name: str,
-        temperature: float = 0.0,
+        temperature: float | None = None,
     ) -> LLMResponse:
         from typing import cast
 
@@ -48,12 +75,15 @@ class OpenAIProvider:
 
         response_format: Any = {
             "type": "json_schema",
-            "json_schema": {"name": schema_name, "schema": schema, "strict": True},
+            "json_schema": {"name": schema_name, "schema": _strictify(schema), "strict": True},
         }
         messages: Any = [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
+        # Only send temperature when explicitly requested; several current models accept only
+        # their default and 400 on any other value.
+        extra: dict[str, Any] = {} if temperature is None else {"temperature": temperature}
 
         last_error: Exception | None = None
         # attempt 0 is the initial try; up to llm_max_retries further attempts.
@@ -61,9 +91,9 @@ class OpenAIProvider:
             try:
                 completion = await self._client.chat.completions.create(
                     model=cast("Any", self._model),
-                    temperature=temperature,
                     response_format=response_format,
                     messages=messages,
+                    **extra,
                 )
                 content = completion.choices[0].message.content or ""
                 usage = completion.usage
