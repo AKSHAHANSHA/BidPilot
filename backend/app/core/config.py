@@ -10,6 +10,7 @@ Environment groups follow `docs/02_BACKEND_ARCHITECTURE.md` §10.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
@@ -21,6 +22,21 @@ from app.core.constants import MIN_JWT_SECRET_LENGTH
 
 AppEnv = Literal["development", "test", "production"]
 StorageBackend = Literal["local", "s3"]
+
+
+@dataclass(frozen=True, slots=True)
+class S3Config:
+    """Validated, non-optional S3 settings handed to the storage adapter."""
+
+    endpoint_url: str
+    region: str
+    access_key_id: str
+    secret_access_key: str
+    bucket_name: str
+    connect_timeout: int
+    read_timeout: int
+    max_attempts: int
+
 
 #: Markers of a secret that was never actually set. `.env.example` ships one deliberately so
 #: a fresh clone runs locally; it must never survive into a deployed environment.
@@ -100,6 +116,18 @@ class Settings(BaseSettings):
     max_upload_bytes: Annotated[int, Field(ge=1024, le=200 * 1024 * 1024)] = 26_214_400
     max_pdf_pages: Annotated[int, Field(ge=1, le=2000)] = 200
 
+    # --- S3-compatible storage (used only when STORAGE_BACKEND=s3) ------------------
+    # Server-side secrets only; never sent to the frontend. Supabase Storage exposes an
+    # S3-compatible endpoint, so these also cover a Supabase private bucket.
+    s3_endpoint_url: str | None = None
+    s3_region: str | None = None
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_bucket_name: str | None = None
+    s3_connect_timeout: Annotated[int, Field(ge=1, le=120)] = 10
+    s3_read_timeout: Annotated[int, Field(ge=1, le=300)] = 60
+    s3_max_attempts: Annotated[int, Field(ge=1, le=10)] = 4
+
     # --- OpenAI --------------------------------------------------------------------
     openai_api_key: str | None = None
     openai_model: str | None = None
@@ -169,6 +197,26 @@ class Settings(BaseSettings):
                 f"JWT_SECRET still contains a placeholder value; set a real random secret "
                 f"before running with APP_ENV={self.app_env}"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _s3_backend_requires_credentials(self) -> Settings:
+        # Fail fast at startup rather than on the first upload if the S3 backend is selected
+        # without the credentials it needs.
+        if self.storage_backend == "s3":
+            missing = [
+                name
+                for name, value in (
+                    ("S3_ENDPOINT_URL", self.s3_endpoint_url),
+                    ("S3_REGION", self.s3_region),
+                    ("S3_ACCESS_KEY_ID", self.s3_access_key_id),
+                    ("S3_SECRET_ACCESS_KEY", self.s3_secret_access_key),
+                    ("S3_BUCKET_NAME", self.s3_bucket_name),
+                )
+                if not value
+            ]
+            if missing:
+                raise ValueError("STORAGE_BACKEND=s3 requires " + ", ".join(missing) + " to be set")
         return self
 
     @model_validator(mode="after")
@@ -245,6 +293,34 @@ class Settings(BaseSettings):
                 "OPENAI_API_KEY and OPENAI_MODEL must both be set to run AI extraction"
             )
         return self.openai_api_key, self.openai_model
+
+    def require_s3(self) -> S3Config:
+        """Return validated S3 settings, or explain what is missing.
+
+        The `_s3_backend_requires_credentials` validator already enforces this at startup;
+        this narrows the optional fields to non-None for the adapter and type checker.
+        """
+        if (
+            not self.s3_endpoint_url
+            or not self.s3_region
+            or not self.s3_access_key_id
+            or not self.s3_secret_access_key
+            or not self.s3_bucket_name
+        ):
+            raise ConfigurationError(
+                "STORAGE_BACKEND=s3 requires S3_ENDPOINT_URL, S3_REGION, S3_ACCESS_KEY_ID, "
+                "S3_SECRET_ACCESS_KEY and S3_BUCKET_NAME"
+            )
+        return S3Config(
+            endpoint_url=self.s3_endpoint_url,
+            region=self.s3_region,
+            access_key_id=self.s3_access_key_id,
+            secret_access_key=self.s3_secret_access_key,
+            bucket_name=self.s3_bucket_name,
+            connect_timeout=self.s3_connect_timeout,
+            read_timeout=self.s3_read_timeout,
+            max_attempts=self.s3_max_attempts,
+        )
 
 
 @lru_cache(maxsize=1)

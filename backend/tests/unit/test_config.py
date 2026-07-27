@@ -167,3 +167,27 @@ def test_require_openai_reports_missing_configuration() -> None:
 def test_require_openai_returns_key_and_model() -> None:
     settings = build(openai_api_key="sk-test", openai_model="gpt-test")
     assert settings.require_openai() == ("sk-test", "gpt-test")
+
+
+def test_s3_backend_requires_credentials() -> None:
+    with pytest.raises(ValidationError, match="S3_ENDPOINT_URL"):
+        build(storage_backend="s3")
+
+
+def test_s3_backend_accepts_full_credentials() -> None:
+    settings = build(
+        storage_backend="s3",
+        s3_endpoint_url="https://x.storage/s3",
+        s3_region="us-east-1",
+        s3_access_key_id="key",
+        s3_secret_access_key="secret",
+        s3_bucket_name="bidpilot",
+    )
+    cfg = settings.require_s3()
+    assert cfg.bucket_name == "bidpilot"
+    assert cfg.endpoint_url == "https://x.storage/s3"
+
+
+def test_local_backend_needs_no_s3_credentials() -> None:
+    # The default local backend must not demand S3 settings.
+    assert build().storage_backend == "local"

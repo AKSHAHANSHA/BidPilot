@@ -24,6 +24,7 @@ dependencies = [
     "pymupdf>=1.25",
     "dramatiq[redis]>=1.17",
     "openai>=1.55",
+    "boto3>=1.35",
 ]
 
 # Dependencies for phases not yet implemented are deliberately absent:
@@ -86,6 +87,11 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# boto3/botocore ship no type stubs; the S3 adapter treats the client as Any deliberately.
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

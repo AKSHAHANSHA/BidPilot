@@ -602,6 +602,27 @@ reports this as a failure rather than encoding the matcher's guess. Gold `expect
 calibrated to current deterministic output as regression guards; fit quality is carried by
 `evidence_match_accuracy`, not the score band.
 
+## D54 — Free-tier deployment: S3 adapter and a single combined service
+
+**Decision:** Add an S3-compatible storage adapter (`app/storage/s3.py`) behind the existing
+`StorageBackend` protocol, selected by `STORAGE_BACKEND=s3`; local filesystem stays the development
+default. boto3 is driven through `asyncio.to_thread` (same pattern as the local adapter), with a
+botocore `Config` supplying bounded retries (adaptive, `S3_MAX_ATTEMPTS`) and connect/read timeouts.
+The bucket is private: objects are written with no ACL, no public or pre-signed URLs are ever
+generated, and PDFs are returned only through authenticated endpoints via `read()`. Keys are the
+same opaque `{user}/{tender}/{uuid}.pdf` strings, which are valid S3 keys unchanged. Tests use an
+in-memory fake client (no live Supabase, no network) and cover the not-found → `FileNotFoundError`
+and delete-returns-false contracts.
+
+**Decision:** For a free student deployment, run the Dramatiq worker *inside* the single Render Free
+Web Service (`backend/scripts/start.sh`) rather than as a separate paid Background Worker. The script
+migrates, launches the worker in the background, and supervises the foreground API; SIGTERM is
+forwarded to both, and a worker crash does not take the API down (we wait on the API PID and log the
+worker's exit). Datastores are external free tiers — Supabase PostgreSQL + Storage, Upstash Redis —
+supplied as `sync:false` secrets, so nothing is provisioned automatically and no paid service exists
+in `render.yaml`. Rejected: a second Render service (not free) and Render Key Value (using Upstash
+keeps Redis portable and TLS-native). See `deploy/DEPLOYMENT.md`.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

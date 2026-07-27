@@ -1,172 +1,208 @@
-# BidPilot UAE — Deployment Guide
+# BidPilot UAE — Free Student Deployment Guide
 
-A lightweight, free-tier deployment for a personal portfolio demo. **Nothing here provisions paid
-infrastructure automatically** — you create the accounts and click deploy. This document is
-configuration and instructions only.
+A completely free deployment for a student portfolio demo. **Nothing here provisions paid
+infrastructure** — you create the free accounts and click deploy. This document is configuration
+and instructions only.
 
 > **Production-readiness disclaimer.** BidPilot is a portfolio project, not a production service.
-> It targets free tiers with cold starts, ephemeral disks, and no horizontal scaling, backups, or
-> uptime guarantees. Do not use it with real, confidential, or regulated tender data. The demo
-> data is entirely fictional.
+> This architecture targets free tiers with cold starts, an ephemeral container, a single combined
+> API+worker process, and no backups, autoscaling, or uptime guarantees. Do not use it with real,
+> confidential, or regulated tender data. The demo data is entirely fictional.
 
 ---
 
-## Architecture
+## Architecture (all free)
 
 ```mermaid
 flowchart LR
-    User([Reviewer]) -->|HTTPS| V[Vercel<br/>React SPA]
-    V -->|"/api/* (CORS, cookies)"| API[Render Web<br/>FastAPI + uvicorn]
-    API -->|SQL over TLS| PG[(Neon<br/>PostgreSQL)]
-    API -->|enqueue| R[(Upstash<br/>Redis)]
-    W[Render Worker<br/>Dramatiq] -->|dequeue| R
+    User([Reviewer]) -->|HTTPS| V[Vercel Hobby<br/>React SPA]
+    V -->|"cross-site API calls (CORS, cookies)"| R[Render Free Web Service]
+    subgraph R[Render Free Web Service — one container]
+      API[FastAPI + Uvicorn]
+      W[Dramatiq worker]
+    end
+    API -->|SQL over TLS| PG[(Supabase<br/>PostgreSQL)]
+    API -->|enqueue| RE[(Upstash<br/>Redis, TLS)]
+    W -->|dequeue| RE
     W -->|read/write| PG
+    API -->|private S3 API| S[(Supabase Storage<br/>private bucket)]
     W -->|structured JSON| LLM[OpenAI API]
-    API -.->|read findings| PG
 ```
 
-- **Frontend** (Vercel): static Vite build. Calls the backend cross-site at `VITE_API_BASE`.
-- **Web** (Render): FastAPI behind uvicorn with `--proxy-headers`. Serves the API and health checks.
-- **Worker** (Render): the Dramatiq consumer that runs the analysis pipeline.
-- **PostgreSQL** (Neon) and **Redis** (Upstash): external managed datastores, free tier, TLS.
-- **OpenAI**: called only by the worker, for schema-constrained extraction. Scoring stays in Python.
+- **Frontend** — Vercel Hobby, static Vite build. Calls the backend cross-site at `VITE_API_BASE`.
+- **Backend** — one Render **Free** Web Service. `scripts/start.sh` runs migrations, launches the
+  Dramatiq **worker in the background**, then serves the API in the foreground. No separate paid
+  Background Worker.
+- **PostgreSQL** — Supabase Free.
+- **Redis** — Upstash Free (TLS `rediss://`). Not Render Key Value.
+- **Object storage** — Supabase Storage **private** bucket via its S3-compatible API. Files are
+  served only through authenticated backend endpoints; no public or pre-signed URLs.
+- **OpenAI** — your existing key; used only by the worker.
 
 ---
 
-## Prerequisites
+## 1. Supabase — PostgreSQL
 
-Accounts (all have free tiers): GitHub, Vercel, Render, Neon, Upstash, OpenAI. No CLI is required;
-everything below is dashboard-driven.
+1. Create a project (choose a region near your Render region).
+2. **Connection string** — Project Settings → Database. Supabase offers two:
+   - **Pooled** (Supavisor/pgBouncer, port `6543`) — use for the **application runtime**
+     (`DATABASE_URL`). Best for the free service's small connection budget.
+   - **Direct** (port `5432`) — Alembic migrations run once per deploy via `start.sh`; the pooled
+     string works for them too, but if you ever run migrations manually and hit a transaction-pooling
+     limitation, use the direct string for that run.
+3. Rewrite the scheme for the async driver and keep TLS:
+   `postgres://…` → `postgresql+asyncpg://…` and append `?ssl=require`.
+   Example: `postgresql+asyncpg://postgres.abcd:PASSWORD@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?ssl=require`
+4. Save it as the `DATABASE_URL` secret in Render. Never commit it.
 
----
+## 2. Supabase — Storage (private bucket, S3 API)
 
-## Manual deployment
+1. Storage → **New bucket**, name it e.g. `bidpilot-tenders`, and keep **Public = off**.
+2. Project Settings → Storage → **S3 Connection**: note the **endpoint URL** and **region**.
+3. Create **S3 access keys** (access key ID + secret). These are **server-side secrets only** — they
+   never go to Vercel or the frontend.
+4. Set the Render secrets: `S3_ENDPOINT_URL`, `S3_REGION`, `S3_ACCESS_KEY_ID`,
+   `S3_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME` (the bucket name from step 1). Keep `STORAGE_BACKEND=s3`.
 
-### 1. PostgreSQL (Neon)
+The adapter uses path-style addressing and SigV4, keeps the bucket private, adds bounded retries and
+timeouts, and reads bytes back through authenticated endpoints only.
 
-1. Create a project; copy the connection string.
-2. Rewrite the scheme for the async driver and keep TLS:
-   `postgresql://…` → `postgresql+asyncpg://…?ssl=require`
-3. Save it as `DATABASE_URL` (used by both Render services).
+## 3. Upstash — Redis
 
-### 2. Redis (Upstash)
+1. Create a Redis database (region near Render). Enable TLS.
+2. Copy the **`rediss://`** URL and save it as the `REDIS_URL` secret. Do **not** use Render Key Value.
 
-1. Create a Redis database (region close to Render).
-2. Copy the **TLS** URL (`rediss://…`). Save it as `REDIS_URL`.
+Dramatiq's Redis broker and the `/health/ready` Redis probe both accept the TLS `rediss://` URL as-is
+(config validates the scheme).
 
-### 3. Backend + worker (Render)
+## 4. Render — one free Web Service
 
-Either apply the blueprint or create the two services by hand.
+**Blueprint:** Render → *New → Blueprint* on this repo. It reads [`render.yaml`](../render.yaml) and
+creates a single **Free** web service named `bidpilot` with:
 
-**Blueprint:** in Render, *New → Blueprint*, point at this repo. It reads [`render.yaml`](../render.yaml)
-and creates `bidpilot-api` (web) and `bidpilot-worker`. Then set the `sync:false` secrets
-(`DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `OPENAI_API_KEY`, `FRONTEND_ORIGIN`) in each service.
+- **Root directory:** `backend`
+- **Build:** `pip install -e .`
+- **Start:** `bash scripts/start.sh`
+- **Health check:** `/health/ready`
 
-**By hand** (root directory `backend/`, Python 3.12, `pip install -e .`):
+Then set the `sync:false` secrets in the dashboard: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`,
+`OPENAI_API_KEY`, `FRONTEND_ORIGIN`, and all five `S3_*` values. `APP_ENV`, `STORAGE_BACKEND=s3`,
+`OPENAI_MODEL=gpt-5-mini`, and the cookie settings are baked into `render.yaml`.
 
-| Service | Start command |
-|---|---|
-| Web | `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` |
-| Worker | `python -m dramatiq app.workers.main` |
-| Migration (web pre-deploy) | `python -m alembic upgrade head` |
+### Exact start command
 
-Set env vars from [`backend/.env.production.example`](../backend/.env.production.example). Health
-check path: `/health/ready`.
-
-### 4. Seed the demo
-
-From a one-off Render shell on the web service (or locally against the Neon URL):
+`scripts/start.sh` runs:
 
 ```bash
-python scripts/seed_demo.py
+python -m alembic upgrade head
+python -m dramatiq app.workers.main --processes 1 --threads 4 &
+exec python -m uvicorn app.main:app \
+  --host 0.0.0.0 \
+  --port "$PORT" \
+  --proxy-headers \
+  --forwarded-allow-ips="*"
 ```
 
-### 5. Frontend (Vercel)
+(The real script supervises both PIDs and forwards SIGTERM so shutdown is clean; a worker crash
+does not take the API down.)
 
-1. *New Project* → import the repo → root directory `frontend/`. Vercel detects Vite and reads
+## 5. Vercel — frontend (Hobby)
+
+1. *New Project* → import the repo → **root directory `frontend/`**. Vercel detects Vite and reads
    [`frontend/vercel.json`](../frontend/vercel.json) (build `npm run build`, output `dist`, SPA rewrite).
-2. Add env var `VITE_API_BASE` = your Render web URL (e.g. `https://bidpilot-api.onrender.com`).
-3. Deploy, then set the backend's `FRONTEND_ORIGIN` to the resulting Vercel URL and redeploy the
-   web service so CORS and the cross-site refresh cookie line up.
+2. Add **one** environment variable:
+   `VITE_API_BASE=https://<your-render-service>.onrender.com`
+3. Deploy. Then set the Render `FRONTEND_ORIGIN` secret to the resulting Vercel URL and redeploy the
+   backend so CORS and the cross-site refresh cookie line up.
 
-### 6. Smoke test
+**No backend secrets belong in Vercel.** The frontend only ever needs `VITE_API_BASE`. The database
+URL, Redis URL, JWT secret, OpenAI key, and S3 credentials live exclusively in Render.
 
-Open the Vercel URL, sign in with the demo credentials, open the company workspace, upload the
-sample tender (`backend/sample_data/sample_tender.pdf`), run an analysis, and open a citation.
+## 6. Smoke test
+
+Open the Vercel URL, sign in with the demo credentials, upload `backend/sample_data/sample_tender.pdf`,
+run an analysis, watch the stages complete, and open a citation. (Seed the demo first — from a Render
+one-off shell: `python scripts/seed_demo.py`.)
 
 ---
 
 ## Environment variables
 
-Full reference: [`backend/.env.production.example`](../backend/.env.production.example). The ones
-that must differ from development:
+Full template: [`backend/.env.production.example`](../backend/.env.production.example).
 
-| Variable | Production value | Why |
+| Variable | Where | Notes |
 |---|---|---|
-| `APP_ENV` | `production` | disables `/docs`, enforces real secrets, Secure cookies |
-| `FRONTEND_ORIGIN` | the Vercel URL | exact CORS allowlist (never `*` with cookies) |
-| `DATABASE_URL` | Neon, `postgresql+asyncpg://…?ssl=require` | async driver + TLS |
-| `REDIS_URL` | Upstash `rediss://…` | TLS broker for Dramatiq |
-| `JWT_SECRET` | 48+ random chars | token signing |
-| `REFRESH_COOKIE_SAMESITE` / `_SECURE` | `none` / `true` | cross-site cookie between vercel.app and onrender.com |
-| `VITE_API_BASE` (Vercel) | Render web URL | frontend → backend origin |
-| `OPENAI_API_KEY` | your key | worker-only; keep spend controlled |
+| `APP_ENV=production` | render.yaml | Secure cookies, no `/docs`, real-secret enforcement |
+| `DATABASE_URL` | Render secret | Supabase pooled, `postgresql+asyncpg://…?ssl=require` |
+| `REDIS_URL` | Render secret | Upstash `rediss://…` |
+| `JWT_SECRET` | Render secret | 48+ random chars |
+| `OPENAI_API_KEY` | Render secret | worker-only |
+| `OPENAI_MODEL=gpt-5-mini` | render.yaml | |
+| `FRONTEND_ORIGIN` | Render secret | exact Vercel origin, no wildcard |
+| `STORAGE_BACKEND=s3` | render.yaml | |
+| `S3_ENDPOINT_URL/REGION/ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET_NAME` | Render secrets | Supabase Storage; server-side only |
+| `VITE_API_BASE` | Vercel | Render service URL; the only frontend var |
 
 ## Secret handling
 
-- Secrets live only in each host's dashboard (Render env vars marked secret, Vercel env vars,
-  Neon/Upstash connection strings). Never in the repo — `.env` is git-ignored; only `*.example`
-  templates are committed.
-- `render.yaml` marks every secret `sync:false`, so Blueprint apply never bakes a value into git.
-- Rotate `JWT_SECRET` to invalidate all sessions. Rotate the OpenAI key from the OpenAI dashboard.
-- The frontend never receives provider keys, the DB URL, or the refresh secret — only `VITE_API_BASE`.
+- Secrets live only in Render (backend) and Vercel (`VITE_API_BASE` only). Never in the repo — `.env`
+  is git-ignored; only `*.example` templates are committed.
+- `render.yaml` marks every secret `sync:false`, so a Blueprint apply never bakes a value into git.
+- S3 credentials and the DB/Redis URLs are **never** sent to the browser. Uploaded PDFs are returned
+  only through authenticated endpoints, never via public bucket URLs.
 
 ## Health checks
 
-- `GET /health/live` — process is up (no dependency checks). Use for liveness.
-- `GET /health/ready` — checks PostgreSQL and Redis; returns 503 `application/problem+json` naming
-  the failed dependency. Render's health check path.
+- `GET /health/live` — process up, no dependency checks (liveness).
+- `GET /api/v1/health/ready` — checks PostgreSQL and Redis; 503 `application/problem+json` naming the
+  failed dependency. Render's configured health-check path.
 
 ## Migrations
 
-`python -m alembic upgrade head` — runs as the web service **pre-deploy** command, so schema is
-migrated once per deploy before traffic shifts. Idempotent.
+`python -m alembic upgrade head` runs at the top of `start.sh` on every deploy/restart. Idempotent.
 
 ## Rollback
 
-- **Code:** Render → the service → *Deploys* → *Rollback* to the previous successful deploy.
-  Vercel → *Deployments* → promote the previous build. Both are near-instant.
-- **Schema:** roll back one migration with `python -m alembic downgrade -1` from a one-off shell.
-  Because deploys migrate forward automatically, prefer a code rollback to a compatible revision
-  over a manual downgrade unless a migration is the specific cause.
-- **Order:** roll the frontend and backend back together when an API contract changed.
+- **Code:** Render → *Deploys* → *Rollback*; Vercel → *Deployments* → promote a previous build. Roll
+  both back together when the API contract changed.
+- **Schema:** from a Render one-off shell, `python -m alembic downgrade -1`. Prefer a code rollback to
+  a compatible revision unless a migration is the specific cause.
 
 ## Data reset
 
+From a Render one-off shell:
+
 ```bash
-python scripts/demo_reset.py     # clears the demo user's tenders/analyses, re-seeds the company
+python scripts/demo_reset.py   # clears the demo user's tenders/analyses and re-seeds the company
 ```
 
-Uploaded files live on the ephemeral disk and vanish on redeploy; re-upload the sample after a
-reset or a restart.
+Uploaded objects persist in the Supabase bucket (durable, unlike local disk); `demo_reset` clears the
+DB rows. To also purge stored files, delete them from the Supabase Storage UI.
 
 ## Cost estimate
 
 | Component | Tier | Monthly |
 |---|---|---|
-| Vercel (Hobby) | free | $0 |
-| Render web + worker | free | $0 (cold starts; worker may sleep) |
-| Neon PostgreSQL | free | $0 |
-| Upstash Redis | free | $0 (per-command free allotment) |
-| OpenAI | pay-as-you-go | ~$0.05–0.10 per analysis (gpt-4o-mini/gpt-5-mini); a full gold-set run measured $0.35 |
+| Vercel Hobby | free | $0 |
+| Render Free Web Service (API + worker) | free | $0 |
+| Supabase (PostgreSQL + Storage) | free | $0 |
+| Upstash Redis | free | $0 |
+| OpenAI | pay-as-you-go | ~$0.05–0.10 per analysis; **not free** once trial credits run out |
 
-Effectively **$0/month** plus a few cents per analysis you actually run.
+Effectively **$0/month** plus a few cents per analysis you run (only if you have OpenAI credit).
 
-## Known limitations
+## Free-tier behaviour and limitations
 
-- **Cold starts:** free Render services sleep; the first request after idle takes ~30–60s, and a
-  sleeping worker delays analysis pickup.
-- **Ephemeral uploads:** local file storage is wiped on redeploy/restart. An S3-compatible backend
-  is the documented next step for durable uploads.
-- **Single worker, no autoscaling, no backups, no custom domain/CDN tuning.**
-- **Demo-scale only:** no multi-tenancy, billing, or SLA. See the disclaimer above.
+- **Render sleeps after inactivity.** The first request after idle can take **roughly a minute** to
+  cold-start (spinning up the container, migrations, worker, API).
+- **The API and worker restart together** — they are one container. A restart briefly interrupts both.
+- **A worker crash does not silently kill the API** (start.sh waits on the API; a dead worker is
+  logged and analyses queue until the next deploy) — but there is no automatic worker restart on the
+  free plan.
+- **Supabase free projects pause after ~1 week of inactivity**; the first request after that may fail
+  until the project resumes (open the Supabase dashboard to wake it).
+- **Upstash free limits apply** (per-day command and storage caps).
+- **OpenAI usage is not free** unless you still have credits.
+- **Single combined process, no autoscaling, no backups, ephemeral container disk** (uploads go to
+  Supabase Storage, which is durable; the container filesystem is not).
+- Intended for a **student portfolio demo, not commercial production.**

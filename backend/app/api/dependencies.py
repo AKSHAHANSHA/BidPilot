@@ -40,6 +40,7 @@ from app.services.risk_service import RiskService
 from app.services.tender_service import TenderService
 from app.storage.base import StorageBackend
 from app.storage.local import LocalStorage
+from app.storage.s3 import S3Storage
 from app.workers.queue import DramatiqJobQueue, JobQueue
 
 logger = get_logger(__name__)
@@ -97,7 +98,9 @@ CompanyServiceDep = Annotated[CompanyService, Depends(get_company_service)]
 
 
 def get_storage(settings: SettingsDep) -> StorageBackend:
-    # Only the local backend exists; an S3 adapter is added when deployment requires it.
+    # Local filesystem in development; S3-compatible object storage when deployed.
+    if settings.storage_backend == "s3":
+        return S3Storage(settings.require_s3())
     return LocalStorage(settings.upload_dir)
 
 

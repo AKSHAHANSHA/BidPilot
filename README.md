@@ -411,14 +411,17 @@ responses — CI never depends on paid API calls.
 
 ## Deployment
 
-Configuration and a full manual guide live in **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** —
-free-tier Vercel (frontend) + Render (web + Dramatiq worker) + Neon (PostgreSQL) + Upstash (Redis).
-The blueprint is [`render.yaml`](render.yaml); the frontend config is
+Configuration and a full manual guide live in **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** — a
+completely free student deployment: Vercel Hobby (frontend) + **one** Render Free Web Service that
+runs the API and the Dramatiq worker in the same container ([`backend/scripts/start.sh`](backend/scripts/start.sh))
++ Supabase (PostgreSQL and private S3 Storage) + Upstash (Redis). The blueprint is
+[`render.yaml`](render.yaml) (single free service, no paid worker); the frontend config is
 [`frontend/vercel.json`](frontend/vercel.json); production env template is
 [`backend/.env.production.example`](backend/.env.production.example). The guide covers the
-architecture diagram, environment and secret handling, migration and worker commands, health
-checks, rollback, data reset, a ~$0/month cost estimate, known limitations, and a
-production-readiness disclaimer. **Nothing there provisions paid infrastructure automatically.**
+architecture diagram, Supabase/Upstash/Vercel setup, environment and secret handling, migration and
+start commands, health checks, rollback, data reset, a ~$0/month cost estimate, free-tier
+limitations, and a production-readiness disclaimer. **Nothing there provisions paid infrastructure
+automatically.** Set `STORAGE_BACKEND=local` for development (the default) or `s3` for deployment.
 
 ### Demo checklist
 

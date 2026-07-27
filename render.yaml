@@ -1,25 +1,26 @@
-# Render blueprint for the BidPilot UAE backend (web API + Dramatiq worker).
+# Render blueprint — single FREE Web Service for a student portfolio deployment.
 #
-# PostgreSQL and Redis are provisioned externally (Neon + Upstash) and supplied as secrets, so
-# nothing here provisions a paid managed datastore. Apply with Render "Blueprints" -> New, or
-# create the two services by hand using the commands below. DATABASE_URL, REDIS_URL, JWT_SECRET,
-# OPENAI_API_KEY, and FRONTEND_ORIGIN are marked sync:false — set them in the dashboard as secrets.
+# The free plan gives one service, so the Dramatiq worker runs INSIDE this web service
+# (see backend/scripts/start.sh) rather than as a separate paid Background Worker. There is no
+# paid service in this file.
 #
-# The web service starts uvicorn with --proxy-headers so X-Forwarded-Proto from Render's proxy is
-# honoured (correct https scheme, so Secure cookies and URLs are right behind the load balancer).
+# PostgreSQL (Supabase), Redis (Upstash), and object storage (Supabase Storage via its
+# S3-compatible API) are all external free tiers, supplied as secrets (sync:false) — nothing here
+# provisions a paid managed datastore.
+#
+# Apply with Render "Blueprints" -> New, then set the sync:false secrets in the dashboard.
 
 services:
   - type: web
-    name: bidpilot-api
+    name: bidpilot
     runtime: python
     plan: free
     rootDir: backend
     buildCommand: pip install -e .
-    # Runs once per deploy, before traffic shifts — safe, idempotent schema migration.
-    preDeployCommand: python -m alembic upgrade head
-    startCommand: >-
-      python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
-      --proxy-headers --forwarded-allow-ips="*"
+    # start.sh runs migrations, launches the worker in the background, then serves the API with
+    # --proxy-headers so X-Forwarded-Proto from Render's proxy is honoured (correct https scheme
+    # for Secure cookies and URLs).
+    startCommand: bash scripts/start.sh
     healthCheckPath: /health/ready
     envVars:
       - key: APP_ENV
@@ -33,11 +34,10 @@ services:
       - key: REFRESH_COOKIE_SECURE
         value: "true"
       - key: STORAGE_BACKEND
-        value: local
-      - key: UPLOAD_DIR
-        value: /tmp/bidpilot-uploads
+        value: s3
       - key: OPENAI_MODEL
-        value: gpt-4o-mini
+        value: gpt-5-mini
+      # --- Secrets: set these in the Render dashboard (never committed) ---
       - key: FRONTEND_ORIGIN
         sync: false
       - key: DATABASE_URL
@@ -48,32 +48,13 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-
-  - type: worker
-    name: bidpilot-worker
-    runtime: python
-    plan: free
-    rootDir: backend
-    buildCommand: pip install -e .
-    startCommand: python -m dramatiq app.workers.main
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: LOG_LEVEL
-        value: INFO
-      - key: PYTHON_VERSION
-        value: "3.12.10"
-      - key: STORAGE_BACKEND
-        value: local
-      - key: UPLOAD_DIR
-        value: /tmp/bidpilot-uploads
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
-      - key: DATABASE_URL
+      - key: S3_ENDPOINT_URL
         sync: false
-      - key: REDIS_URL
+      - key: S3_REGION
         sync: false
-      - key: JWT_SECRET
+      - key: S3_ACCESS_KEY_ID
         sync: false
-      - key: OPENAI_API_KEY
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
         sync: false
