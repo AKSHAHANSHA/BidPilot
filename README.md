@@ -33,16 +33,9 @@ working until its verification commands have been run.
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | **Complete** |
 | 8 | Deterministic evidence matching, cited risk extraction, human review | **Complete** |
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | **Complete** |
-| 10 | Frontend core (React 19 / TS / Vite / Tailwind v4), design approved, live-verified | **Core complete** |
-| 4 | Page-aware extraction | Not started |
-| 5 | Background jobs and progress | Not started |
-| 6 | Requirement extraction | Not started |
-| 7 | Citation verification | Not started |
-| 8 | Evidence matching and risks | Not started |
-| 9 | Readiness scoring and report | Not started |
-| 10 | Frontend | Not started |
-| 11 | Evaluation and polish | Not started |
-| 12 | Deployment | Not started |
+| 10 | Frontend (React 19 / TS / Vite / Tailwind v4): auth, tender desk, command center, company + evidence/project CRUD, export | **Complete** |
+| 11 | Gold-set evaluation, demo-reset, Playwright journey, matcher fix | **Complete** |
+| 12 | Deployment configuration and docs (Vercel + Render + Neon + Upstash) | **Config ready, not deployed** |
 
 ---
 
@@ -416,9 +409,30 @@ responses — CI never depends on paid API calls.
   redaction in the log formatter, not just by convention.
 - Uploaded document content is treated as untrusted data and never as instructions.
 
+## Deployment
+
+Configuration and a full manual guide live in **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** —
+free-tier Vercel (frontend) + Render (web + Dramatiq worker) + Neon (PostgreSQL) + Upstash (Redis).
+The blueprint is [`render.yaml`](render.yaml); the frontend config is
+[`frontend/vercel.json`](frontend/vercel.json); production env template is
+[`backend/.env.production.example`](backend/.env.production.example). The guide covers the
+architecture diagram, environment and secret handling, migration and worker commands, health
+checks, rollback, data reset, a ~$0/month cost estimate, known limitations, and a
+production-readiness disclaimer. **Nothing there provisions paid infrastructure automatically.**
+
+### Demo checklist
+
+1. `make up` (Postgres + Redis), then in the backend venv `make migrate` and `make seed`.
+2. Start `make api` and `make worker`; start the frontend with `npm run dev`.
+3. Sign in as `demo@fm-demo.ae` / `bidpilot-demo-passphrase-1`.
+4. Company workspace: profile, evidence with live expiry, projects; open and close the edit modal.
+5. Upload `backend/sample_data/sample_tender.pdf`, run an analysis, watch the stages, open a
+   citation in the source drawer, submit a readiness override with a reason.
+6. Export the requirements CSV / full-analysis JSON.
+7. `make demo-reset` returns everything to the seeded starting state.
+
 ## Known limitations
 
-- Phases 3–12 are not built yet: no tenders, uploads, extraction, worker, scoring, or frontend.
 - No file upload on evidence. The response carries a contract-stable `attachment: null`, but no
   storage columns exist — adding them in Phase 3 is additive, so inventing them now would be
   speculation.

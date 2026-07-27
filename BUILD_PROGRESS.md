@@ -20,7 +20,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | Complete |
 | 10 | Frontend (auth, tender desk, upload, command center, company + evidence/project CRUD, export) | Complete |
 | 11 | Gold-set evaluation, demo reset, Playwright journey, matcher fix | Complete |
-| 12 | Deployment | Not started |
+| 12 | Deployment configuration and docs (not deployed) | Config ready |
 
 ---
 
@@ -639,7 +639,37 @@ the matcher cannot distinguish a specific certificate from any certificate in it
 
 ---
 
-## Phase 12 — Deployment — not started
+## Phase 12 — Deployment configuration
 
-Lightweight deployment config (Render/Railway + Neon + Upstash), production-safe settings, and
-deployment docs. No paid infrastructure will be provisioned without explicit approval.
+**Config ready; not deployed.** Free-tier shape: Vercel (frontend) + Render (web + Dramatiq worker)
++ Neon (PostgreSQL) + Upstash (Redis). Configuration and documentation only — **no paid
+infrastructure was provisioned and no account authorization was used.**
+
+### Files
+
+- [`render.yaml`](render.yaml) — Render blueprint: `bidpilot-api` (uvicorn `--proxy-headers`, health
+  check `/health/ready`, pre-deploy `alembic upgrade head`) and `bidpilot-worker` (Dramatiq). All
+  secrets `sync:false`.
+- [`frontend/vercel.json`](frontend/vercel.json) — Vite build, `dist` output, SPA rewrite.
+- [`backend/.env.production.example`](backend/.env.production.example) — production env template.
+- [`deploy/DEPLOYMENT.md`](deploy/DEPLOYMENT.md) — architecture diagram, manual deploy guide, env +
+  secret handling, health checks, migration/worker commands, rollback, data reset, cost estimate
+  (~$0/month + cents per analysis), known limitations, and a production-readiness disclaimer.
+
+### Code changes for cross-site production
+
+- `frontend/src/api/client.ts` — API base now reads `VITE_API_BASE` (defaults to `""`, so dev is
+  unchanged and uses the Vite proxy); the manual refresh `fetch` uses the same base.
+- Production cookies were already derived from `APP_ENV`; the template sets `SameSite=None` +
+  `Secure` for the vercel.app ↔ onrender.com cross-site refresh cookie, and CORS stays an exact
+  allowlist (never `*`).
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `frontend` typecheck · ESLint · `vite build` | all pass |
+| `render.yaml` / `vercel.json` parse | valid |
+| Playwright journey after the client change | 2 passed, 1 skipped (dev behaviour unchanged) |
+
+Not performed by design: any actual deploy, account creation, or paid provisioning.

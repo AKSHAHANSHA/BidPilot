@@ -1,0 +1,79 @@
+# Render blueprint for the BidPilot UAE backend (web API + Dramatiq worker).
+#
+# PostgreSQL and Redis are provisioned externally (Neon + Upstash) and supplied as secrets, so
+# nothing here provisions a paid managed datastore. Apply with Render "Blueprints" -> New, or
+# create the two services by hand using the commands below. DATABASE_URL, REDIS_URL, JWT_SECRET,
+# OPENAI_API_KEY, and FRONTEND_ORIGIN are marked sync:false — set them in the dashboard as secrets.
+#
+# The web service starts uvicorn with --proxy-headers so X-Forwarded-Proto from Render's proxy is
+# honoured (correct https scheme, so Secure cookies and URLs are right behind the load balancer).
+
+services:
+  - type: web
+    name: bidpilot-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -e .
+    # Runs once per deploy, before traffic shifts — safe, idempotent schema migration.
+    preDeployCommand: python -m alembic upgrade head
+    startCommand: >-
+      python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /health/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: REFRESH_COOKIE_SAMESITE
+        value: none
+      - key: REFRESH_COOKIE_SECURE
+        value: "true"
+      - key: STORAGE_BACKEND
+        value: local
+      - key: UPLOAD_DIR
+        value: /tmp/bidpilot-uploads
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: worker
+    name: bidpilot-worker
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -e .
+    startCommand: python -m dramatiq app.workers.main
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: STORAGE_BACKEND
+        value: local
+      - key: UPLOAD_DIR
+        value: /tmp/bidpilot-uploads
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

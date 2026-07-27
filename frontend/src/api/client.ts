@@ -24,7 +24,11 @@ export function onAuthChange(fn: (token: string | null) => void): () => void {
   return () => listeners.delete(fn);
 }
 
-const BASE = "";
+// Empty in development so requests are relative and the Vite proxy forwards /api to the backend
+// (same-origin, simplest cookies). In production, set VITE_API_BASE to the backend origin
+// (e.g. https://bidpilot-api.onrender.com) — the backend's CORS allowlist and SameSite=None
+// refresh cookie are configured for that cross-site call.
+const BASE = import.meta.env.VITE_API_BASE ?? "";
 
 let refreshing: Promise<boolean> | null = null;
 
@@ -33,7 +37,7 @@ async function refreshOnce(): Promise<boolean> {
   if (!refreshing) {
     refreshing = (async () => {
       try {
-        const res = await fetch("/api/v1/auth/refresh", {
+        const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
           method: "POST",
           credentials: "include",
         });
