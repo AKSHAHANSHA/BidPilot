@@ -11,6 +11,7 @@ import {
   Spinner,
   StatusBadge,
 } from "../components/ui";
+import { exportAnalysisJson, exportRequirementsCsv } from "../lib/export";
 
 const TERMINAL = new Set(["completed", "failed"]);
 
@@ -153,7 +154,11 @@ export function TenderPage() {
           onRetry={() => queryClient.invalidateQueries({ queryKey: ["analyses", tenderId] })}
         />
       ) : (
-        <CompletedAnalysis analysisId={latest.id} onCite={setCite} />
+        <CompletedAnalysis
+          analysisId={latest.id}
+          reference={t.reference || t.title.replace(/\s+/g, "-").toLowerCase()}
+          onCite={setCite}
+        />
       )}
 
       {cite ? <SourceDrawer citation={cite} onClose={() => setCite(null)} /> : null}
@@ -246,9 +251,11 @@ function ProcessingRoom({
 
 function CompletedAnalysis({
   analysisId,
+  reference,
   onCite,
 }: {
   analysisId: string;
+  reference: string;
   onCite: (c: CitationTarget) => void;
 }) {
   const readiness = useQuery({
@@ -448,6 +455,39 @@ function CompletedAnalysis({
       </div>
 
       <div className="col-span-12 lg:col-span-4 space-y-6">
+        <Card className="p-4">
+          <h3 className="font-display text-lg mb-2">Export</h3>
+          <p className="text-xs text-ink-muted mb-3">
+            Download the analysis for offline review. Exports carry source pages and citation-verified
+            flags.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="ghost"
+              disabled={!requirements.data?.length}
+              onClick={() => exportRequirementsCsv(requirements.data ?? [], reference)}
+            >
+              Requirements (CSV)
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={!r}
+              onClick={() =>
+                exportAnalysisJson(
+                  {
+                    reference,
+                    readiness: r,
+                    requirements: requirements.data ?? [],
+                    risks: risks.data ?? [],
+                  },
+                  reference,
+                )
+              }
+            >
+              Full analysis (JSON)
+            </Button>
+          </div>
+        </Card>
         <Card className="p-4">
           <h3 className="font-display text-lg mb-2">Assumptions</h3>
           <ul className="text-xs text-ink-muted space-y-1 list-disc pl-4">

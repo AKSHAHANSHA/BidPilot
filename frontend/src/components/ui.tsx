@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 
 export function Button({
   variant = "primary",
@@ -29,6 +35,47 @@ export function Field({
         className="w-full border border-rule-soft bg-surface px-3 py-2 text-sm rounded-[3px] focus:border-ink outline-none min-h-11"
         {...props}
       />
+      {error ? <span className="block text-xs text-danger mt-1">{error}</span> : null}
+    </label>
+  );
+}
+
+export function TextArea({
+  label,
+  error,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; error?: string }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold uppercase tracking-wide text-ink-muted mb-1">
+        {label}
+      </span>
+      <textarea
+        className="w-full border border-rule-soft bg-surface px-3 py-2 text-sm rounded-[3px] focus:border-ink outline-none"
+        {...props}
+      />
+      {error ? <span className="block text-xs text-danger mt-1">{error}</span> : null}
+    </label>
+  );
+}
+
+export function Select({
+  label,
+  error,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { label: string; error?: string }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold uppercase tracking-wide text-ink-muted mb-1">
+        {label}
+      </span>
+      <select
+        className="w-full border border-rule-soft bg-surface px-3 py-2 text-sm rounded-[3px] focus:border-ink outline-none min-h-11"
+        {...props}
+      >
+        {children}
+      </select>
       {error ? <span className="block text-xs text-danger mt-1">{error}</span> : null}
     </label>
   );

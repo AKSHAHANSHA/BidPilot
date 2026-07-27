@@ -18,7 +18,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | Complete |
 | 8 | Deterministic evidence matching, risk extraction, human review | Complete |
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | Complete |
-| 10 | Frontend core (auth, tender desk, upload, command center, company, notes) | Core complete; tail pending |
+| 10 | Frontend (auth, tender desk, upload, command center, company + evidence/project CRUD, export) | Complete |
 | 11 | Evaluation and polish | Not started |
 | 12 | Deployment | Not started |
 
@@ -529,7 +529,7 @@ scoring → generating_report → completed`.
 
 ## Phase 10 — Frontend
 
-**Core complete and visually approved.** React 19 + TypeScript (strict) + Vite + Tailwind v4,
+**Complete and visually approved.** React 19 + TypeScript (strict) + Vite + Tailwind v4,
 typed against the generated OpenAPI schema (`npm run gen:api`). The "Procurement Ledger" identity
 from `docs/05` — paper tones, hairline rules, editorial-red signals, Newsreader / Source Sans /
 IBM Plex Mono. Access token in memory with silent refresh via the HttpOnly cookie; TanStack Query
@@ -540,12 +540,30 @@ Pages: auth (login/register), tender desk, new tender + PDF upload, tender comma
 matrix, risk register, slide-in source-citation drawer with quote highlighting, readiness
 override), company profile with derived expiry, engineering notes.
 
+### Interactive workflows (Phase 10 tail)
+
+All destructive and mutating flows are now wired to the API with accessible modals and
+RFC 7807 error mapping:
+
+- **Company profile create/edit** — `ProfileForm` (POST/PATCH `/api/v1/company`) in a focus-trapped
+  modal; success invalidates the `company` query so the profile *and* its completion score refresh.
+- **Evidence create/edit/delete** — `EvidenceForm` + `ConfirmDialog`; delete guarded by a confirm
+  dialog naming the item.
+- **Project create/edit/delete** — `ProjectForm` + `ConfirmDialog`; a completed project requires an
+  end date (backend-enforced, surfaced inline).
+- **Validation errors** — `toFieldErrors` maps the `body.<field>` / `query.<field>` prefixes from
+  the problem-details `errors` array onto per-field messages, falling back to a form-level alert.
+- **Export controls** — client-side CSV (requirements) and JSON (full analysis) of the data already
+  loaded in the command center; server-side signed exports remain Phase 11.
+- Loading, empty, and error states on every list; keyboard support (Escape closes, focus restored).
+
 ### Verified
 
 | Check | Result |
 |---|---|
-| `npm run typecheck` · `eslint` · `vite build` | all pass |
-| In-browser (real backend) | login, shell, tender desk, company profile with live expiry binding |
+| `npm run typecheck` · `eslint --max-warnings=0` · `vite build` | all pass (106 modules) |
+| **Live CRUD smoke** (real backend) | evidence create/patch/delete → 201/200/204; project create/patch/delete → 201/200/204 (`duration_months` derived = 12); 422 returns `body.title → "Field required"` |
+| In-browser (real backend) | session restored on load; company page renders profile, evidence table with live expiry states, and projects section; Edit-profile modal opens pre-populated and closes on Escape; command center Export card renders both CSV/JSON actions |
 | **Live command center** | the real-LLM analysis below rendered end to end: readiness 49/100 (weak bid), six dimensions, compliance matrix with per-requirement citation links (p.2 ✓) |
 | Design | **approved by the user** |
 
@@ -558,14 +576,11 @@ Against `gpt-5-mini` through the real Dramatiq worker, a 4-page sample tender
 (commit `af1b6b0`): `gpt-5-mini` rejects a custom `temperature`, and OpenAI strict mode needs
 every property in `required` with `additionalProperties:false`.
 
-### Remaining tail (not yet built)
+### Deferred to later phases (by design)
 
-- Company-profile **create/edit form** (currently read-only in the UI; profiles are created via
-  API or the seed script).
-- Evidence and project **create/edit forms**.
-- **CSV/JSON export** UI (the export endpoints themselves are Phase 11).
-- A tender **create form exists**; a richer new-tender dossier with drag-and-drop is polish.
-- Playwright critical-journey test (Phase 11).
+- **Server-side signed exports** (the current export is client-side over already-loaded data) — Phase 11.
+- A tender **create form exists**; a richer new-tender dossier with drag-and-drop is optional polish.
+- Playwright critical-journey test — Phase 11.
 
 ---
 
