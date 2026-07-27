@@ -24,19 +24,35 @@ from app.domain.enums import (
     VerificationStatus,
 )
 from app.domain.expiry import days_until_expiry, derive_expiry_state, expiry_state_filter
+from app.domain.scoring import (
+    SCORING_VERSION,
+    ReadinessResult,
+    RequirementScore,
+    RiskScore,
+    ScoringInput,
+    calculate_readiness,
+    days_until,
+)
 
 __all__ = [
     "COMPLETION_VERSION",
     "FUZZY_THRESHOLD",
+    "SCORING_VERSION",
     "CompletionResult",
     "Emirate",
     "EvidenceCategory",
     "ExpiryState",
     "ProjectStatus",
+    "ReadinessResult",
+    "RequirementScore",
     "RevenueRange",
+    "RiskScore",
+    "ScoringInput",
     "VerificationResult",
     "VerificationStatus",
     "calculate_completion",
+    "calculate_readiness",
+    "days_until",
     "days_until_expiry",
     "derive_expiry_state",
     "expiry_state_filter",

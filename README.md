@@ -32,6 +32,7 @@ working until its verification commands have been run.
 | 6 | LLM adapter (OpenAI), structured extraction, versioned prompts, token/cost | **Complete** |
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | **Complete** |
 | 8 | Deterministic evidence matching, cited risk extraction, human review | **Complete** |
+| 9 | Deterministic readiness scoring, hard blockers, report, human override | **Complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |

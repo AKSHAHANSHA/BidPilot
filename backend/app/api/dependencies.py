@@ -34,6 +34,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.analysis_service import AnalysisService
 from app.services.auth_service import AuthService, ClientContext
 from app.services.company_service import CompanyService
+from app.services.readiness_service import ReadinessService
 from app.services.requirement_service import RequirementService
 from app.services.risk_service import RiskService
 from app.services.tender_service import TenderService
@@ -159,6 +160,13 @@ def get_risk_service(session: SessionDep) -> RiskService:
 
 
 RiskServiceDep = Annotated[RiskService, Depends(get_risk_service)]
+
+
+def get_readiness_service(session: SessionDep) -> ReadinessService:
+    return ReadinessService(session=session, analyses=AnalysisRepository(session))
+
+
+ReadinessServiceDep = Annotated[ReadinessService, Depends(get_readiness_service)]
 
 
 async def get_current_user(

@@ -41,14 +41,23 @@ from app.domain.enums import (
     MatchStatus,
 )
 from app.domain.matching import EvidenceFact, RequirementFact, match_requirement
+from app.domain.scoring import (
+    RequirementScore,
+    RiskScore,
+    ScoringInput,
+    calculate_readiness,
+    days_until,
+)
 from app.models.analysis import Analysis
 from app.models.company_evidence import CompanyEvidence
 from app.models.company_profile import CompanyProfile
 from app.models.document import Document
 from app.models.document_page import DocumentPage
 from app.models.evidence_match import RequirementEvidenceMatch
+from app.models.readiness import ReadinessAssessment
 from app.models.requirement import Requirement, RequirementCitation
 from app.models.risk import RiskCitation, RiskFinding
+from app.models.tender import Tender
 from app.models.tender_metadata import TenderMetadata
 
 logger = get_logger(__name__)
@@ -435,8 +444,145 @@ async def stage_analysing_risks(ctx: PipelineContext) -> None:
     )
 
 
-#: Ordered pipeline. Phase 9 inserts scoring and report generation between risk analysis and
-#: COMPLETED.
+def _effective_status(req: Requirement) -> str:
+    """The reviewed status if a human set one, otherwise the machine status."""
+    if req.reviewed_status != ComplianceStatus.UNREVIEWED.value:
+        return req.reviewed_status
+    return req.machine_status
+
+
+async def stage_scoring(ctx: PipelineContext) -> None:
+    """Calculate readiness deterministically from validated records (never the LLM)."""
+    await _advance(ctx, AnalysisStage.SCORING, "Calculating bid readiness.")
+
+    requirements = (
+        (
+            await ctx.session.execute(
+                select(Requirement).where(
+                    Requirement.analysis_id == ctx.analysis.id,
+                    Requirement.citation_verified.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    risks = (
+        (
+            await ctx.session.execute(
+                select(RiskFinding).where(
+                    RiskFinding.analysis_id == ctx.analysis.id,
+                    RiskFinding.citation_verified.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    tender = await ctx.session.get(Tender, ctx.analysis.tender_id)
+    deadline = tender.submission_deadline if tender else None
+
+    scoring_input = ScoringInput(
+        requirements=[
+            RequirementScore(
+                category=r.category,
+                obligation=r.obligation,
+                status=_effective_status(r),
+                expected_evidence_count=len(r.expected_evidence),
+                # A satisfied-evidence count is approximated by compliance for now; refined
+                # when evidence items are individually linked to expected-evidence entries.
+                satisfied_evidence_count=(
+                    len(r.expected_evidence)
+                    if _effective_status(r) == ComplianceStatus.MET.value
+                    else 0
+                ),
+            )
+            for r in requirements
+        ],
+        risks=[RiskScore(severity=r.severity, risk_type=r.risk_type) for r in risks],
+        submission_deadline=deadline,
+        deadline_feasibility_days=days_until(deadline),
+        bid_bond_available=None,
+    )
+
+    result = calculate_readiness(scoring_input)
+
+    ctx.session.add(
+        ReadinessAssessment(
+            owner_user_id=ctx.analysis.owner_user_id,
+            analysis_id=ctx.analysis.id,
+            overall_score=result.overall_score,
+            decision_label=result.decision_label.value,
+            dimension_scores=[
+                {
+                    "key": d.key,
+                    "label": d.label,
+                    "raw_score": d.raw_score,
+                    "weight": d.weight,
+                    "weighted_score": d.weighted_score,
+                    "explanation": d.explanation,
+                }
+                for d in result.dimensions
+            ],
+            hard_blockers=[{"code": b.code, "message": b.message} for b in result.hard_blockers],
+            assumptions=list(result.assumptions),
+            calculation_version=result.version,
+        )
+    )
+    ctx.analysis.scoring_version = result.version
+    logger.info(
+        "readiness_scored",
+        extra={
+            "analysis_id": str(ctx.analysis.id),
+            "score": result.overall_score,
+            "label": result.decision_label.value,
+        },
+    )
+
+
+async def stage_generating_report(ctx: PipelineContext) -> None:
+    """Compose the executive summary from validated records only (`docs/03` §14).
+
+    Deterministic in this phase — assembled from the persisted assessment, requirements, and
+    risks, so every statement maps to a finding. A model-written narrative over the same
+    structured summary is a future enhancement, not a requirement.
+    """
+    await _advance(ctx, AnalysisStage.GENERATING_REPORT, "Generating the recommendation.")
+
+    assessment = (
+        await ctx.session.execute(
+            select(ReadinessAssessment).where(ReadinessAssessment.analysis_id == ctx.analysis.id)
+        )
+    ).scalar_one()
+
+    canonical = list(
+        (
+            await ctx.session.execute(
+                select(Requirement).where(
+                    Requirement.analysis_id == ctx.analysis.id,
+                    Requirement.citation_verified.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    mandatory = [r for r in canonical if r.obligation == "mandatory"]
+    gaps = [r for r in mandatory if _effective_status(r) == ComplianceStatus.NOT_MET.value]
+
+    lines = [
+        f"Recommendation: {assessment.decision_label.replace('_', ' ')} "
+        f"(readiness {assessment.overall_score}/100).",
+        f"{len(canonical)} requirements verified against the source, {len(mandatory)} mandatory.",
+    ]
+    if assessment.hard_blockers:
+        lines.append("Hard blockers: " + "; ".join(b["message"] for b in assessment.hard_blockers))
+    if gaps:
+        lines.append(f"{len(gaps)} mandatory requirement(s) are currently unmet.")
+    ctx.analysis.summary = " ".join(lines)
+
+
+#: The full pipeline, end to end.
 PIPELINE: tuple[tuple[AnalysisStage, StageHandler], ...] = (
     (AnalysisStage.VALIDATING, stage_validating),
     (AnalysisStage.EXTRACTING_TEXT, stage_extracting_text),
@@ -446,6 +592,8 @@ PIPELINE: tuple[tuple[AnalysisStage, StageHandler], ...] = (
     (AnalysisStage.VERIFYING_CITATIONS, stage_verifying_citations),
     (AnalysisStage.MATCHING_EVIDENCE, stage_matching_evidence),
     (AnalysisStage.ANALYSING_RISKS, stage_analysing_risks),
+    (AnalysisStage.SCORING, stage_scoring),
+    (AnalysisStage.GENERATING_REPORT, stage_generating_report),
 )
 
 
@@ -460,6 +608,9 @@ async def _reset_findings(session: AsyncSession, analysis_id: uuid.UUID) -> None
     await session.execute(delete(Requirement).where(Requirement.analysis_id == analysis_id))
     await session.execute(delete(RiskFinding).where(RiskFinding.analysis_id == analysis_id))
     await session.execute(delete(TenderMetadata).where(TenderMetadata.analysis_id == analysis_id))
+    await session.execute(
+        delete(ReadinessAssessment).where(ReadinessAssessment.analysis_id == analysis_id)
+    )
 
 
 async def run_analysis(

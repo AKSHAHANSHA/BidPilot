@@ -1101,6 +1101,18 @@
         "title": "ComplianceStatus",
         "type": "string"
       },
+      "DecisionLabel": {
+        "description": "Overall bid recommendation (`docs/03` \u00a713). Hard blockers can override the numeric band.",
+        "enum": [
+          "strong_bid",
+          "conditional_bid",
+          "weak_bid",
+          "do_not_bid",
+          "insufficient_information"
+        ],
+        "title": "DecisionLabel",
+        "type": "string"
+      },
       "DependencyStatus": {
         "properties": {
           "name": {
@@ -1124,6 +1136,44 @@
           "status"
         ],
         "title": "DependencyStatus",
+        "type": "object"
+      },
+      "DimensionRead": {
+        "properties": {
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "raw_score": {
+            "title": "Raw Score",
+            "type": "number"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          },
+          "weighted_score": {
+            "title": "Weighted Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "raw_score",
+          "weight",
+          "weighted_score",
+          "explanation"
+        ],
+        "title": "DimensionRead",
         "type": "object"
       },
       "DocumentExtractionStatus": {
@@ -1705,6 +1755,41 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HardBlockerRead": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "HardBlockerRead",
+        "type": "object"
+      },
+      "HumanOverrideRead": {
+        "properties": {
+          "label": {
+            "$ref": "#/components/schemas/DecisionLabel"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "reason"
+        ],
+        "title": "HumanOverrideRead",
         "type": "object"
       },
       "LivenessResponse": {
@@ -2430,6 +2515,95 @@
           }
         },
         "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "ReadinessOverrideRequest": {
+        "description": "A human override of the decision label. The machine score/label is preserved.",
+        "properties": {
+          "decision_label": {
+            "$ref": "#/components/schemas/DecisionLabel"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision_label",
+          "reason"
+        ],
+        "title": "ReadinessOverrideRequest",
+        "type": "object"
+      },
+      "ReadinessRead": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "calculation_version": {
+            "title": "Calculation Version",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision_label": {
+            "$ref": "#/components/schemas/DecisionLabel"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionRead"
+            },
+            "title": "Dimensions",
+            "type": "array"
+          },
+          "hard_blockers": {
+            "items": {
+              "$ref": "#/components/schemas/HardBlockerRead"
+            },
+            "title": "Hard Blockers",
+            "type": "array"
+          },
+          "human_override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HumanOverrideRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overall_score": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Overall Score",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "overall_score",
+          "decision_label",
+          "dimensions",
+          "hard_blockers",
+          "assumptions",
+          "calculation_version",
+          "human_override",
+          "created_at"
+        ],
+        "title": "ReadinessRead",
         "type": "object"
       },
       "ReadinessResponse": {
@@ -3387,6 +3561,158 @@
         "summary": "Poll analysis progress",
         "tags": [
           "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}/readiness": {
+      "get": {
+        "description": "The deterministic score, per-dimension breakdown, hard blockers, and any override.",
+        "operationId": "get_readiness_api_v1_analyses__analysis_id__readiness_get",
+        "parameters": [
+          {
+            "description": "Analysis identifier.",
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "description": "Analysis identifier.",
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get the readiness assessment",
+        "tags": [
+          "readiness"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}/readiness/override": {
+      "patch": {
+        "description": "Human override. A reason is mandatory. The machine score and label are preserved; only the override is recorded.",
+        "operationId": "override_readiness_api_v1_analyses__analysis_id__readiness_override_patch",
+        "parameters": [
+          {
+            "description": "Analysis identifier.",
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "description": "Analysis identifier.",
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadinessOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Override the decision label",
+        "tags": [
+          "readiness"
         ]
       }
     },

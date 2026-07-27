@@ -17,7 +17,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 6 | LLM adapter, structured extraction, prompts, token/cost, requirements API | Complete |
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | Complete |
 | 8 | Deterministic evidence matching, risk extraction, human review | Complete |
-| 9 | Readiness scoring and report | Not started |
+| 9 | Deterministic readiness scoring, hard blockers, report, human override | Complete |
 | 10 | Frontend | Not started |
 | 11 | Evaluation and polish | Not started |
 | 12 | Deployment | Not started |
@@ -480,7 +480,55 @@ PATCH /api/v1/risks/{id}/review           reason required
 
 ---
 
-## Phase 9 — Readiness scoring and report (next)
+## Phase 9 — Readiness scoring and report
 
-Not started. Versioned deterministic scoring across the six dimensions, hard blockers, decision
-label, narrative report from validated records only, and human override of the readiness label.
+**Complete.** Versioned deterministic scoring (`app/domain/scoring.py`) across six weighted
+dimensions, hard blockers that override the numeric label, decision labels, a narrative report
+assembled from validated records only, and a human-override endpoint that preserves the machine
+result. `ReadinessAssessment` model (migration `0009`), pipeline stages `scoring` and
+`generating_report`. The LLM is never in the scoring path (D50-D52).
+
+### Verified
+
+| Command | Result |
+|---|---|
+| `./make.ps1 check` | passed — ruff, mypy (95 files), **264 unit/API tests** |
+| `./make.ps1 test-integration` | **223 passed** |
+| `alembic upgrade head` / `alembic check` | head `0009`, no drift |
+| `./make.ps1 openapi` | 31 paths |
+| Live pipeline check | full run against real PostgreSQL → 12 requirements verified, scored 28.5, `do_not_bid` with a hard blocker, 6 dimensions, tokens/cost recorded |
+
+**Totals: 487 tests — 264 unit/API, 223 integration.** Exit test met: identical structured
+inputs always produce the same score (asserted in a unit test and across two real analysis
+versions).
+
+### Endpoints
+
+```text
+GET   /api/v1/analyses/{id}/readiness            score, dimensions, blockers, assumptions
+PATCH /api/v1/analyses/{id}/readiness/override   reason required; machine result preserved
+```
+
+### The backend analysis pipeline is now complete (Phases 5-9)
+
+`validating → extracting_text → assessing_quality → extracting_metadata →
+extracting_requirements → verifying_citations → matching_evidence → analysing_risks →
+scoring → generating_report → completed`.
+
+### Limitations
+
+- The narrative is deterministic (assembled from records), not model-written — sufficient for
+  explainability; a model narrative over the structured summary is future work.
+- `evidence_completeness` and `capability_experience` approximate satisfied-evidence counts from
+  compliance status rather than linking individual evidence items to expected-evidence entries.
+- `bid_bond_available` is not yet captured from the company profile, so that specific hard
+  blocker only fires when the data is supplied programmatically.
+- Live OpenAI extraction still pending your key (Phases 6/8); scoring itself needs no provider.
+
+---
+
+## Phase 10 — Frontend (next; needs your visual approval)
+
+Not started. React 19 + TypeScript + Vite + Tailwind v4 against the generated OpenAPI types,
+per `PROMPT_2_BUILD_FRONTEND.md` and `docs/05_FRONTEND_SPEC.md`. Per the blocker policy this
+phase ends with a checkpoint for your subjective visual approval before it is finalized.

@@ -541,6 +541,39 @@ exactly like a requirement.
 `machine_status`/the machine finding — the original is kept for audit and explainability
 (`docs/03` §11, CLAUDE.md). A review without a reason is a 422.
 
+## D50 — The score is deterministic Python, never the model
+
+`app/domain/scoring.py` takes validated, persisted findings and applies explicit weighted rules
+to produce a 0-100 score, a six-dimension breakdown, hard blockers, and a decision label. The
+LLM is never in this path (`docs/03` §11, CLAUDE.md). Weights total 100 (checked at import);
+each dimension returns 0-100 before weighting; the total is the weighted sum. Same inputs, same
+output — asserted both in a unit test (ten identical runs) and across two real analysis versions
+in an integration test.
+
+Only citation-verified requirements and risks feed scoring, and the effective compliance status
+is the human-reviewed one if present, else the machine's — so an override flows into the score
+without erasing the machine verdict. `scoring_version` is stamped on the analysis.
+
+## D51 — Hard blockers override the numeric band
+
+A passed deadline, an unmet mandatory registration/certification, or a required-but-unavailable
+bid bond is a hard blocker (`docs/03` §12). Blockers override the numeric label: a passed
+deadline is never remediable → `do_not_bid` even with a high score; a remediable blocker with
+≥14 days to the deadline → `conditional_bid`; otherwise `do_not_bid`. No requirements at all →
+`insufficient_information`. Verified live: an otherwise-scoring tender with a passed deadline
+returns `do_not_bid`.
+
+## D52 — The narrative is assembled from records, not generated
+
+Phase 9's report is composed deterministically from the persisted assessment, requirements, and
+risks, so every statement maps to a finding (`docs/03` §14 — narrative from validated records
+only). A model-written narrative over the same compact structured summary is a future
+enhancement; it is deliberately not built now, because the deterministic summary already
+satisfies the explainability requirement without a provider call or a hallucination surface.
+
+The readiness override endpoint records a human label plus a mandatory reason and never touches
+the machine score/label (D49 pattern, `docs/04` §2).
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

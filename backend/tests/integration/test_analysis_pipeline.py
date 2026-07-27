@@ -117,8 +117,9 @@ async def test_pipeline_completes_and_records_provenance(db_session: AsyncSessio
     assert analysis.attempt_count == 1
     assert analysis.started_at is not None
     assert analysis.completed_at >= analysis.started_at
-    # The final summary comes from the citation-verification stage.
-    assert "verified citation" in (analysis.summary or "")
+    # The final summary comes from the report-generation stage (the last stage to write it).
+    assert "Recommendation" in (analysis.summary or "")
+    assert analysis.scoring_version is not None
 
 
 async def test_pipeline_fails_validation_without_a_document(db_session: AsyncSession) -> None:

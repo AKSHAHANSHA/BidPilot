@@ -12,6 +12,7 @@ from app.models.company_project import CompanyProject
 from app.models.document import Document
 from app.models.document_page import DocumentPage
 from app.models.evidence_match import RequirementEvidenceMatch
+from app.models.readiness import ReadinessAssessment
 from app.models.refresh_session import RefreshSession
 from app.models.requirement import Requirement, RequirementCitation
 from app.models.risk import RiskCitation, RiskFinding
@@ -26,6 +27,7 @@ __all__ = [
     "CompanyProject",
     "Document",
     "DocumentPage",
+    "ReadinessAssessment",
     "RefreshSession",
     "Requirement",
     "RequirementCitation",

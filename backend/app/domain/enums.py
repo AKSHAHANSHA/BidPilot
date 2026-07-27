@@ -205,6 +205,16 @@ class RiskSeverity(VocabularyEnum):
     LOW = "low"
 
 
+class DecisionLabel(VocabularyEnum):
+    """Overall bid recommendation (`docs/03` §13). Hard blockers can override the numeric band."""
+
+    STRONG_BID = "strong_bid"
+    CONDITIONAL_BID = "conditional_bid"
+    WEAK_BID = "weak_bid"
+    DO_NOT_BID = "do_not_bid"
+    INSUFFICIENT_INFORMATION = "insufficient_information"
+
+
 class MatchStatus(VocabularyEnum):
     """Evidence-match verdict. Absence is `needs_clarification`/`not_met`, never proof of a gap
     (`docs/03` §9)."""
