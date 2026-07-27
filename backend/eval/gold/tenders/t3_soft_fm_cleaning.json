@@ -1,0 +1,132 @@
+{
+  "id": "t3_soft_fm_cleaning",
+  "title": "Soft FM - Cleaning and Landscaping Services",
+  "buyer": "Fictional Community Developments PJSC (demo)",
+  "reference": "GOLD-SFM-2026-003",
+  "submission_deadline_offset_days": 90,
+  "notes": "Soft FM tender squarely in the company's core. Strong fit. Contains one deliberate citation trap: a requirement whose source_quote does not appear on its cited page and must be rejected by verification. Expect conditional_bid or strong_bid.",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "SECTION 1 - SERVICES\n\nThe developer requires daily cleaning, waste management, and landscaping services across three residential communities. The contract covers common areas, external grounds, and shared amenities. The contract term is two years."
+    },
+    {
+      "page_number": 2,
+      "text": "SECTION 2 - REQUIREMENTS\n\nThe bidder must hold a valid UAE trade licence covering cleaning and landscaping activities. The bidder must hold a valid ISO 9001 certificate for quality management. The bidder must provide third-party liability insurance of at least AED 3,000,000. The bidder must demonstrate prior soft FM contracts of comparable scale. The bidder must submit audited financial statements for the last financial year."
+    },
+    {
+      "page_number": 3,
+      "text": "SECTION 3 - CONDITIONS\n\nPayment terms are 45 days from invoice. Liquidated damages of 0.5% per week apply for service failures, capped at 5%. The developer may terminate for material breach with a 30-day cure period."
+    }
+  ],
+  "requirements": [
+    {
+      "original_text": "The bidder must hold a valid UAE trade licence covering cleaning and landscaping activities.",
+      "normalized_text": "Hold a valid UAE trade licence covering cleaning and landscaping activities.",
+      "category": "legal_registration",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "trade licence"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid UAE trade licence covering cleaning and landscaping activities.",
+      "confidence": 0.95,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "normalized_text": "Hold a valid ISO 9001 quality management certificate.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 9001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "confidence": 0.95,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must provide third-party liability insurance of at least AED 3,000,000.",
+      "normalized_text": "Provide third-party liability insurance of at least AED 3,000,000.",
+      "category": "insurance",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "third-party liability insurance"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide third-party liability insurance of at least AED 3,000,000.",
+      "confidence": 0.94,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must demonstrate prior soft FM contracts of comparable scale.",
+      "normalized_text": "Demonstrate prior soft FM contracts of comparable scale.",
+      "category": "experience",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "previous projects"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must demonstrate prior soft FM contracts of comparable scale.",
+      "confidence": 0.9,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must submit audited financial statements for the last financial year.",
+      "normalized_text": "Submit audited financial statements for the last financial year.",
+      "category": "financial",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "audited financial statements"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must submit audited financial statements for the last financial year.",
+      "confidence": 0.92,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must provide a dedicated on-site quality supervisor for each community.",
+      "normalized_text": "Provide a dedicated on-site quality supervisor per community.",
+      "category": "staffing",
+      "obligation": "optional",
+      "expected_evidence": [
+        "staff cv"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide a dedicated on-site quality supervisor for each community, available at all times.",
+      "confidence": 0.7,
+      "citation_should_verify": false,
+      "gold_match_status": "needs_clarification"
+    }
+  ],
+  "risks": [
+    {
+      "risk_type": "liquidated_damages",
+      "severity": "low",
+      "summary": "Liquidated damages 0.5% per week capped at 5%.",
+      "why_it_matters": "Modest but real delay exposure for service failures.",
+      "suggested_action": "Confirm measurement of service failures.",
+      "source_page": 3,
+      "source_quote": "Liquidated damages of 0.5% per week apply for service failures, capped at 5%.",
+      "confidence": 0.85
+    },
+    {
+      "risk_type": "termination",
+      "severity": "low",
+      "summary": "Termination for material breach with a 30-day cure period.",
+      "why_it_matters": "A cure period is favourable but breach thresholds should be clear.",
+      "suggested_action": "Confirm what constitutes material breach.",
+      "source_page": 3,
+      "source_quote": "The developer may terminate for material breach with a 30-day cure period.",
+      "confidence": 0.8
+    }
+  ],
+  "expected_score_min": 78,
+  "expected_score_max": 92,
+  "expected_decision_labels": [
+    "conditional_bid",
+    "strong_bid"
+  ],
+  "score_range_note": "Calibrated to bracket current deterministic output; a regression guard, not a quality judgement. Fit quality is measured by evidence_match_accuracy."
+}

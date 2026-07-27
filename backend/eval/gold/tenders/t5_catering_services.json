@@ -1,0 +1,119 @@
+{
+  "id": "t5_catering_services",
+  "title": "Staff Catering and Pantry Services",
+  "buyer": "Fictional Corporate Headquarters Co (demo)",
+  "reference": "GOLD-CAT-2026-005",
+  "submission_deadline_offset_days": 40,
+  "notes": "Catering is adjacent to soft FM but not the company's core. Mixed fit: general eligibility met, food-specific requirements need clarification. Expect weak_bid or conditional_bid.",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "SECTION 1 - SCOPE\n\nThe company requires staff catering and pantry management services for its headquarters, serving approximately 800 staff daily. The scope includes kitchen operation, meal service, and pantry replenishment. The contract term is two years."
+    },
+    {
+      "page_number": 2,
+      "text": "SECTION 2 - REQUIREMENTS\n\nThe bidder must hold a valid trade licence covering catering and food services. The bidder must hold a valid food safety certification such as HACCP or ISO 22000. The bidder must provide third-party liability insurance of at least AED 2,000,000. The bidder must demonstrate prior catering contracts of similar staff numbers. The bidder must hold a valid ISO 9001 certificate for quality management."
+    },
+    {
+      "page_number": 3,
+      "text": "SECTION 3 - CONDITIONS\n\nPayment terms are 30 days from invoice. The company may adjust daily covers by up to 20% with one week notice. Liquidated damages apply for food-safety failures. The contract may be terminated on three months notice for convenience."
+    }
+  ],
+  "requirements": [
+    {
+      "original_text": "The bidder must hold a valid trade licence covering catering and food services.",
+      "normalized_text": "Hold a valid trade licence covering catering and food services.",
+      "category": "legal_registration",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "catering trade licence"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid trade licence covering catering and food services.",
+      "confidence": 0.9,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must hold a valid food safety certification such as HACCP or ISO 22000.",
+      "normalized_text": "Hold a valid food safety certification such as HACCP or ISO 22000.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "haccp certificate",
+        "iso 22000 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid food safety certification such as HACCP or ISO 22000.",
+      "confidence": 0.9,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must provide third-party liability insurance of at least AED 2,000,000.",
+      "normalized_text": "Provide third-party liability insurance of at least AED 2,000,000.",
+      "category": "insurance",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "third-party liability insurance"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide third-party liability insurance of at least AED 2,000,000.",
+      "confidence": 0.94,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must demonstrate prior catering contracts of similar staff numbers.",
+      "normalized_text": "Demonstrate prior catering contracts of similar scale.",
+      "category": "experience",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "catering projects"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must demonstrate prior catering contracts of similar staff numbers.",
+      "confidence": 0.88,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "normalized_text": "Hold a valid ISO 9001 quality management certificate.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 9001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "confidence": 0.95,
+      "gold_match_status": "met"
+    }
+  ],
+  "risks": [
+    {
+      "risk_type": "unclear_scope",
+      "severity": "medium",
+      "summary": "Daily covers may vary by up to 20%.",
+      "why_it_matters": "Variable volumes complicate staffing and food-cost planning.",
+      "suggested_action": "Agree a pricing mechanism for volume bands.",
+      "source_page": 3,
+      "source_quote": "The company may adjust daily covers by up to 20% with one week notice.",
+      "confidence": 0.82
+    },
+    {
+      "risk_type": "termination",
+      "severity": "low",
+      "summary": "Termination for convenience on three months notice.",
+      "why_it_matters": "Three months notice is reasonable but still a commercial exposure.",
+      "suggested_action": "Confirm handover and demobilisation terms.",
+      "source_page": 3,
+      "source_quote": "The contract may be terminated on three months notice for convenience.",
+      "confidence": 0.78
+    }
+  ],
+  "expected_score_min": 66,
+  "expected_score_max": 82,
+  "expected_decision_labels": [
+    "weak_bid",
+    "conditional_bid"
+  ],
+  "score_range_note": "Calibrated to bracket current deterministic output; a regression guard, not a quality judgement. Fit quality is measured by evidence_match_accuracy."
+}

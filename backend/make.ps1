@@ -57,15 +57,16 @@ Targets:
   migrate           Apply all migrations
   revision -m "..." Autogenerate a migration
   downgrade         Roll back one migration
-  seed              Load demo data (Phase 2)
+  seed              Load the fictional demo company, evidence, and projects
   lint / format / format-check / typecheck
   test              Unit and API tests (no external services)
   test-integration  Tests requiring PostgreSQL and Redis
   test-all          Every test
-  eval              Pipeline evaluation (Phase 11)
+  eval              Gold-set evaluation (mocked, zero cost)
+  eval-live         Gold-set evaluation against real OpenAI (costs money, capped $1)
   openapi           Export artifacts/openapi.json
   check             format-check + lint + typecheck + test
-  demo-reset        Reset demo data (Phase 11)
+  demo-reset        Clear demo tenders/analyses and re-seed the company
   clean             Remove caches
 '@
     }
@@ -98,9 +99,10 @@ Targets:
     }
 
     'worker' { Invoke-Step 'dramatiq worker' @('-m', 'dramatiq', 'app.workers.main') }
-    'seed' { Show-NotYetImplemented 'Seeding is implemented in Phase 2 (company profile and evidence).' }
-    'eval' { Show-NotYetImplemented 'Evaluation is implemented in Phase 11 (evaluation and polish).' }
-    'demo-reset' { Show-NotYetImplemented 'Demo reset is implemented in Phase 11 (evaluation and polish).' }
+    'seed' { Invoke-Step 'seed demo' @('scripts/seed_demo.py') }
+    'eval' { Invoke-Step 'gold-set evaluation (mock)' @('scripts/evaluate_pipeline.py') }
+    'eval-live' { Invoke-Step 'gold-set evaluation (live)' @('scripts/evaluate_pipeline.py', '--live', '--max-cost', '1.00') }
+    'demo-reset' { Invoke-Step 'demo reset' @('scripts/demo_reset.py') }
 
     'migrate' { Invoke-Step 'alembic upgrade head' @('-m', 'alembic', 'upgrade', 'head') }
     'downgrade' { Invoke-Step 'alembic downgrade -1' @('-m', 'alembic', 'downgrade', '-1') }

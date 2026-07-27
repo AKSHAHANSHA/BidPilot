@@ -15,7 +15,7 @@ UNIT := -m "not integration"
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install dev api worker migrate revision downgrade seed lint format \
-        typecheck test test-integration test-all eval openapi check up down logs \
+        typecheck test test-integration test-all eval eval-live openapi check up down logs \
         demo-reset clean
 
 help: ## List available targets
@@ -55,8 +55,8 @@ revision: ## Autogenerate a migration: make revision m="add users"
 downgrade: ## Roll back one migration
 	$(PY) -m alembic downgrade -1
 
-seed: ## Load the demo company, evidence, and sample tender
-	@echo "Seeding is implemented in Phase 2 (company profile and evidence)." && exit 1
+seed: ## Load the fictional demo company, evidence, and projects
+	$(PY) scripts/seed_demo.py
 
 lint: ## Ruff lint
 	$(PY) -m ruff check .
@@ -79,16 +79,19 @@ test-integration: ## Tests requiring PostgreSQL and Redis
 test-all: ## Every test
 	$(PYTEST)
 
-eval: ## Run the pipeline evaluation against the gold sample set
-	@echo "Evaluation is implemented in Phase 11 (evaluation and polish)." && exit 1
+eval: ## Run the gold-set evaluation (mocked, zero cost); writes eval/reports/*.{json,csv}
+	$(PY) scripts/evaluate_pipeline.py
+
+eval-live: ## Run the gold-set evaluation against the real OpenAI provider (costs money, capped)
+	$(PY) scripts/evaluate_pipeline.py --live --max-cost 1.00
 
 openapi: ## Export artifacts/openapi.json
 	$(PY) scripts/export_openapi.py
 
 check: format-check lint typecheck test ## Everything CI enforces on every commit
 
-demo-reset: ## Reset the demo database and seeded analyses
-	@echo "Demo reset is implemented in Phase 11 (evaluation and polish)." && exit 1
+demo-reset: ## Clear the demo user's tenders/analyses and re-seed the company
+	$(PY) scripts/demo_reset.py
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage

@@ -1,0 +1,128 @@
+{
+  "id": "t4_civil_construction",
+  "title": "Civil Construction - New Warehouse Build",
+  "buyer": "Fictional Industrial Estates Authority (demo)",
+  "reference": "GOLD-CIV-2026-004",
+  "submission_deadline_offset_days": 5,
+  "notes": "Heavy civil construction, outside the FM company's scope. No construction licence, no construction experience, no G+ classification. Very short deadline. Expect do_not_bid, likely with a hard blocker on mandatory compliance.",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "SECTION 1 - PROJECT\n\nThe Authority invites bids for the construction of a new 20,000 square metre warehouse and associated civil works. The scope includes foundations, structural steel, cladding, and external works. The programme is 18 months from site handover."
+    },
+    {
+      "page_number": 2,
+      "text": "SECTION 2 - ELIGIBILITY\n\nThe bidder must hold a valid building contractor licence with a grade permitting projects of this value. The bidder must demonstrate at least five completed construction projects of similar value in the last seven years. The bidder must provide contractor all-risk insurance for the full contract value. The bidder must submit a performance bond of 10% of the contract value. The bidder must hold a valid ISO 45001 occupational health and safety certificate."
+    },
+    {
+      "page_number": 3,
+      "text": "SECTION 3 - CONDITIONS\n\nLiquidated damages of 2% of the contract value per week of delay apply, with no cap. The contractor bears all ground-condition risk. Retention of 10% applies until final completion. Payment terms are 60 days from certified valuation."
+    }
+  ],
+  "requirements": [
+    {
+      "original_text": "The bidder must hold a valid building contractor licence with a grade permitting projects of this value.",
+      "normalized_text": "Hold a valid building contractor licence of sufficient grade.",
+      "category": "legal_registration",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "building contractor licence"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid building contractor licence with a grade permitting projects of this value.",
+      "confidence": 0.95,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must demonstrate at least five completed construction projects of similar value in the last seven years.",
+      "normalized_text": "Demonstrate five completed construction projects in seven years.",
+      "category": "experience",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "construction projects"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must demonstrate at least five completed construction projects of similar value in the last seven years.",
+      "confidence": 0.93,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must provide contractor all-risk insurance for the full contract value.",
+      "normalized_text": "Provide contractor all-risk insurance for the full contract value.",
+      "category": "insurance",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "contractor all-risk insurance"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide contractor all-risk insurance for the full contract value.",
+      "confidence": 0.9,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must submit a performance bond of 10% of the contract value.",
+      "normalized_text": "Submit a performance bond of 10% of the contract value.",
+      "category": "bid_bond_guarantee",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "performance bond"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must submit a performance bond of 10% of the contract value.",
+      "confidence": 0.9,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "The bidder must hold a valid ISO 45001 occupational health and safety certificate.",
+      "normalized_text": "Hold a valid ISO 45001 occupational health and safety certificate.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 45001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 45001 occupational health and safety certificate.",
+      "confidence": 0.9,
+      "gold_match_status": "not_met"
+    }
+  ],
+  "risks": [
+    {
+      "risk_type": "liquidated_damages",
+      "severity": "critical",
+      "summary": "Uncapped liquidated damages at 2% per week.",
+      "why_it_matters": "Uncapped delay damages create unlimited financial exposure.",
+      "suggested_action": "Insist on a cap and clear extension-of-time provisions.",
+      "source_page": 3,
+      "source_quote": "Liquidated damages of 2% of the contract value per week of delay apply, with no cap.",
+      "confidence": 0.92
+    },
+    {
+      "risk_type": "unclear_scope",
+      "severity": "high",
+      "summary": "Contractor bears all ground-condition risk.",
+      "why_it_matters": "Unquantified ground risk can generate large unrecoverable costs.",
+      "suggested_action": "Request a geotechnical survey and a ground-condition risk-sharing mechanism.",
+      "source_page": 3,
+      "source_quote": "The contractor bears all ground-condition risk.",
+      "confidence": 0.88
+    },
+    {
+      "risk_type": "performance_guarantee",
+      "severity": "high",
+      "summary": "10% retention until final completion.",
+      "why_it_matters": "High retention ties up working capital for the whole programme.",
+      "suggested_action": "Negotiate phased retention release.",
+      "source_page": 3,
+      "source_quote": "Retention of 10% applies until final completion.",
+      "confidence": 0.85
+    }
+  ],
+  "expected_score_min": 36,
+  "expected_score_max": 52,
+  "expected_decision_labels": [
+    "do_not_bid",
+    "weak_bid"
+  ],
+  "score_range_note": "Calibrated to bracket current deterministic output; a regression guard, not a quality judgement. Fit quality is measured by evidence_match_accuracy."
+}

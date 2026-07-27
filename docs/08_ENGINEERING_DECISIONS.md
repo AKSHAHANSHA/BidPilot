@@ -574,6 +574,34 @@ satisfies the explainability requirement without a provider call or a hallucinat
 The readiness override endpoint records a human label plus a mandatory reason and never touches
 the machine score/label (D49 pattern, `docs/04` §2).
 
+## D53 — The evaluation harness reuses the pipeline, and it found a matcher defect
+
+**Decision:** Phase 11's gold-set harness (`backend/eval/harness.py`) calls the *same* domain
+functions the worker calls — `extract_requirements`, `verify_quote`, `match_requirement`,
+`calculate_readiness` — rather than re-implementing any rule. A metric therefore reflects shipped
+behaviour. By default it drives a `GoldReplayProvider` (no network, no key, zero cost) that
+replays the annotated requirements, so the run validates the deterministic stages (citation
+verification including rejection, matching, scoring determinism and calibrated score bands) and
+the harness itself. Real extraction quality is measured only under `make eval-live`, which is
+cost-capped and never touched by `make test`.
+
+**What it caught:** the first run reported evidence-match accuracy of 0.71. The deterministic
+matcher returned `met` on *any* token overlap, so a requirement and an evidence item that shared
+only the category noun ("insurance", "iso", "trade licence") counted as satisfied — inflating
+out-of-domain tenders (a civil-construction tender scored `conditional_bid` for an FM company).
+Two surgical fixes in `app/domain/matching.py`: (1) a `met` match now requires a *discriminating*
+shared token, not just a generic category word (`_GENERIC_MATCH_TOKENS`); (2) the tokenizer splits
+on any non-word run so trailing punctuation ("activities.") no longer hides a real overlap.
+Accuracy rose to 0.96 and out-of-domain scores fell into plausible bands. All 490 tests still pass
+(one integration fixture updated to use a discriminating term, reflecting the corrected behaviour).
+
+**Residual, documented, not hidden:** the matcher still cannot tell a *specific* certificate from
+*any* certificate in the same category (ISO 45001 required, only ISO 9001/14001 on file →
+`partially_met` where a human says `not_met`). Ground truth stays human-correct, so the harness
+reports this as a failure rather than encoding the matcher's guess. Gold `expected_score` bands are
+calibrated to current deterministic output as regression guards; fit quality is carried by
+`evidence_match_accuracy`, not the score band.
+
 ## D34 — Postponed deliberately
 
 Not built yet, and each waits for the phase that needs it: OCR fallback, the S3 storage

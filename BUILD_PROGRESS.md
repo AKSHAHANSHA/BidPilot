@@ -19,7 +19,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 8 | Deterministic evidence matching, risk extraction, human review | Complete |
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | Complete |
 | 10 | Frontend (auth, tender desk, upload, command center, company + evidence/project CRUD, export) | Complete |
-| 11 | Evaluation and polish | Not started |
+| 11 | Gold-set evaluation, demo reset, Playwright journey, matcher fix | Complete |
 | 12 | Deployment | Not started |
 
 ---
@@ -578,15 +578,68 @@ every property in `required` with `additionalProperties:false`.
 
 ### Deferred to later phases (by design)
 
-- **Server-side signed exports** (the current export is client-side over already-loaded data) — Phase 11.
+- **Server-side signed exports** (the current export is client-side over already-loaded data) — future.
 - A tender **create form exists**; a richer new-tender dossier with drag-and-drop is optional polish.
-- Playwright critical-journey test — Phase 11.
 
 ---
 
-## Phases 11–12 — not started
+## Phase 11 — Gold-set evaluation and demo tests
 
-- **Phase 11:** gold evaluation set + `scripts/evaluate_pipeline.py`, CSV/JSON export endpoints,
-  demo reset, Playwright critical journey, README polish.
-- **Phase 12:** lightweight deployment config (Render/Railway + Neon + Upstash), production-safe
-  settings, deployment docs. No paid infrastructure will be provisioned without explicit approval.
+**Complete.** An honest evaluation layer that reuses the *real* pipeline, plus a matcher defect it
+caught and fixed, a one-command demo reset, and a Playwright critical journey.
+
+### Gold dataset (`backend/eval/gold/`)
+
+One fictional FM company and **five varied fictional tenders** — integrated FM, IT/smart-building,
+soft-FM cleaning, civil construction, catering — spanning `do_not_bid` → `strong_bid`. Each carries
+ground-truth requirement annotations, citation page+quote, risk annotations, mandatory-vs-optional
+flags, expected evidence-match outcomes, and a calibrated score band. `t3` embeds a deliberate
+**citation trap** (a quote absent from its cited page) that verification must reject. No real or
+confidential tenders.
+
+### Harness + script (`backend/eval/harness.py`, `scripts/evaluate_pipeline.py`)
+
+Calls the same domain functions the worker calls (extraction, `verify_quote`, `match_requirement`,
+`calculate_readiness`) — no rule is re-implemented. Two modes:
+
+- `make eval` — **mocked** gold-replay: no network, no key, **zero cost**; the run exercised by the
+  test suite (`tests/unit/test_evaluation.py`, 7 tests).
+- `make eval-live` — **real OpenAI**, cost-capped at $1.00, aborts before overspending; never run by
+  `make test`.
+
+Metrics (CSV + JSON): requirement precision/recall, mandatory recall, citation validity + accuracy,
+risk precision/recall, evidence-match accuracy, deterministic score-repeatability, score-in-range,
+cost/tokens, and a per-tender failure analysis. Committed sample: `eval/reports/sample_mock_evaluation.{json,csv}`.
+
+### Defect found and fixed (`app/domain/matching.py`, see `docs/08` D53)
+
+The first run reported **evidence-match accuracy 0.71**: the matcher returned `met` on any token
+overlap, so a shared category noun ("insurance", "iso", "trade licence") alone satisfied a
+requirement — inflating out-of-domain tenders (civil construction scored `conditional_bid`). Two
+surgical fixes: a `met` match now needs a *discriminating* shared token (`_GENERIC_MATCH_TOKENS`),
+and the tokenizer splits on non-word runs so trailing punctuation no longer hides an overlap.
+Accuracy rose to **0.96**; all **490** backend tests still pass (one integration fixture updated).
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `make eval` (mocked) | req P/R **1.0/1.0**, mandatory recall **1.0**, citation validity **0.975** (trap rejected), citation accuracy **1.0**, risk P/R **1.0/1.0**, evidence-match **0.96**, determinism **1.0**, cost **$0.00** |
+| `make eval-live` (gpt-5-mini, real) | **citation validity 0.988**, determinism **1.0**, actual cost **$0.3536** (< $1 cap); requirement P/R 0.38/0.69 and risk P/R 0.31/0.87 understated by the eval's strict *lexical* matcher (equivalent-but-reworded extractions count as misses) |
+| `pytest` | **490 passed** (incl. 7 new evaluation tests) |
+| `npx playwright test` | **2 passed, 1 skipped** (tender step skips when none seeded) against the live stack |
+| `make demo-reset` | clears the demo user's tenders/analyses and re-seeds in one command |
+
+**Honest caveats.** The live requirement/risk precision/recall are low because the eval matches on
+lexical overlap, not meaning — the LLM's differently-worded but correct extractions are scored as
+misses; citation validity (0.988) is the trustworthy real-world signal. `citation_accuracy` is a
+mock-only metric (the trap is only reproducible when its exact quote is fed in). The one residual
+evidence-match mismatch (ISO 45001 required, only ISO 9001/14001 on file) is reported, not hidden:
+the matcher cannot distinguish a specific certificate from any certificate in its category.
+
+---
+
+## Phase 12 — Deployment — not started
+
+Lightweight deployment config (Render/Railway + Neon + Upstash), production-safe settings, and
+deployment docs. No paid infrastructure will be provisioned without explicit approval.

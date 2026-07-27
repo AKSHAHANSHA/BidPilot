@@ -1,0 +1,201 @@
+{
+  "id": "t1_fm_campus",
+  "title": "Integrated Facilities Management - Government Campus",
+  "buyer": "Fictional Government Campus Authority (demo)",
+  "reference": "GOLD-FM-2026-001",
+  "submission_deadline_offset_days": 60,
+  "notes": "Broad hard+soft FM tender. Company is a strong FM fit but has staffing/experience clarifications. Expect a weak-to-conditional bid.",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "SECTION 1 - INVITATION TO TENDER\n\nThe Authority invites bids for integrated hard and soft facilities management services for its government campus in Dubai. Bidders are required to bid for integrated hard and soft facilities management services for the specified government campus. The contract term is three years with an option to extend by one year.\n\nBids must be submitted by the stated deadline through the electronic portal. Late submissions will not be accepted under any circumstances."
+    },
+    {
+      "page_number": 2,
+      "text": "SECTION 2 - ELIGIBILITY AND COMPLIANCE\n\nThe bidder must hold a valid UAE trade licence that covers facilities management activities. The bidder must provide third-party liability insurance with minimum coverage of AED 5,000,000. The bidder must hold a valid ISO 9001 certificate for quality management. The bidder must hold a valid ISO 14001 environmental management certificate. The bidder must submit a bid bond equal to 2% of the tender value with its offer."
+    },
+    {
+      "page_number": 3,
+      "text": "SECTION 3 - TECHNICAL AND STAFFING\n\nThe bidder must demonstrate completion of at least three similar facilities management projects within the last five years. The bidder must provide CVs for key staff and include a certified facilities manager among them. The bidder must maintain a directly employed workforce to perform critical services and not rely solely on subcontractors."
+    },
+    {
+      "page_number": 4,
+      "text": "SECTION 4 - CONTRACT CONDITIONS\n\nThe contractor shall indemnify the Authority against all third-party claims under the contract. The Authority may terminate the contract for convenience with 30 days written notice. Payment will be made 60 days from invoice submission. Liquidated damages of 1% of the contract value per week of delay apply, capped at 10% of the total contract value."
+    }
+  ],
+  "requirements": [
+    {
+      "original_text": "The bidder must hold a valid UAE trade licence that covers facilities management activities.",
+      "normalized_text": "Hold a valid UAE trade licence covering facilities management activities.",
+      "category": "legal_registration",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "trade licence"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid UAE trade licence that covers facilities management activities.",
+      "confidence": 0.97,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must provide third-party liability insurance with minimum coverage of AED 5,000,000.",
+      "normalized_text": "Provide third-party liability insurance of at least AED 5,000,000.",
+      "category": "insurance",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "third-party liability insurance"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide third-party liability insurance with minimum coverage of AED 5,000,000.",
+      "confidence": 0.96,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "normalized_text": "Hold a valid ISO 9001 quality management certificate.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 9001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 9001 certificate for quality management.",
+      "confidence": 0.95,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must hold a valid ISO 14001 environmental management certificate.",
+      "normalized_text": "Hold a valid ISO 14001 environmental management certificate.",
+      "category": "certification",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 14001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 14001 environmental management certificate.",
+      "confidence": 0.95,
+      "gold_match_status": "met"
+    },
+    {
+      "original_text": "The bidder must submit a bid bond equal to 2% of the tender value with its offer.",
+      "normalized_text": "Submit a bid bond equal to 2% of the tender value.",
+      "category": "bid_bond_guarantee",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "bid bond"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must submit a bid bond equal to 2% of the tender value with its offer.",
+      "confidence": 0.9,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "The bidder must demonstrate completion of at least three similar facilities management projects within the last five years.",
+      "normalized_text": "Demonstrate at least three similar FM projects in the last five years.",
+      "category": "experience",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "previous projects"
+      ],
+      "source_page": 3,
+      "source_quote": "The bidder must demonstrate completion of at least three similar facilities management projects within the last five years.",
+      "confidence": 0.93,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must provide CVs for key staff and include a certified facilities manager among them.",
+      "normalized_text": "Provide CVs for key staff including a certified facilities manager.",
+      "category": "staffing",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "staff cv"
+      ],
+      "source_page": 3,
+      "source_quote": "The bidder must provide CVs for key staff and include a certified facilities manager among them.",
+      "confidence": 0.9,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "The bidder must maintain a directly employed workforce to perform critical services and not rely solely on subcontractors.",
+      "normalized_text": "Maintain a directly employed workforce for critical services.",
+      "category": "staffing",
+      "obligation": "mandatory",
+      "expected_evidence": [],
+      "source_page": 3,
+      "source_quote": "The bidder must maintain a directly employed workforce to perform critical services and not rely solely on subcontractors.",
+      "confidence": 0.85,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "Bidders are required to bid for integrated hard and soft facilities management services for the specified government campus.",
+      "normalized_text": "Bid for integrated hard and soft FM services for the campus.",
+      "category": "technical_capability",
+      "obligation": "mandatory",
+      "expected_evidence": [],
+      "source_page": 1,
+      "source_quote": "Bidders are required to bid for integrated hard and soft facilities management services for the specified government campus.",
+      "confidence": 0.8,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "Payment will be made 60 days from invoice submission.",
+      "normalized_text": "Payment terms are 60 days from invoice.",
+      "category": "commercial",
+      "obligation": "optional",
+      "expected_evidence": [],
+      "source_page": 4,
+      "source_quote": "Payment will be made 60 days from invoice submission.",
+      "confidence": 0.75,
+      "gold_match_status": "not_applicable"
+    }
+  ],
+  "risks": [
+    {
+      "risk_type": "indemnity_liability",
+      "severity": "high",
+      "summary": "Broad third-party indemnity in favour of the Authority.",
+      "why_it_matters": "An unlimited indemnity can expose the contractor to liabilities beyond its insurance cover.",
+      "suggested_action": "Negotiate a cap and limit indemnity to contractor negligence.",
+      "source_page": 4,
+      "source_quote": "The contractor shall indemnify the Authority against all third-party claims under the contract.",
+      "confidence": 0.9
+    },
+    {
+      "risk_type": "termination",
+      "severity": "medium",
+      "summary": "Termination for convenience on 30 days notice.",
+      "why_it_matters": "Short-notice termination can leave unrecovered mobilisation costs.",
+      "suggested_action": "Seek longer notice and mobilisation cost recovery.",
+      "source_page": 4,
+      "source_quote": "The Authority may terminate the contract for convenience with 30 days written notice.",
+      "confidence": 0.88
+    },
+    {
+      "risk_type": "payment_terms",
+      "severity": "medium",
+      "summary": "60-day payment terms.",
+      "why_it_matters": "Long payment terms pressure working capital.",
+      "suggested_action": "Negotiate shorter terms or milestone payments.",
+      "source_page": 4,
+      "source_quote": "Payment will be made 60 days from invoice submission.",
+      "confidence": 0.85
+    },
+    {
+      "risk_type": "liquidated_damages",
+      "severity": "medium",
+      "summary": "Liquidated damages 1% per week capped at 10%.",
+      "why_it_matters": "Delay exposure can accumulate to the cap.",
+      "suggested_action": "Clarify delay definition and extension-of-time rights.",
+      "source_page": 4,
+      "source_quote": "Liquidated damages of 1% of the contract value per week of delay apply, capped at 10% of the total contract value.",
+      "confidence": 0.87
+    }
+  ],
+  "expected_score_min": 55,
+  "expected_score_max": 72,
+  "expected_decision_labels": [
+    "weak_bid",
+    "conditional_bid"
+  ],
+  "score_range_note": "Calibrated to bracket current deterministic output; a regression guard, not a quality judgement. Fit quality is measured by evidence_match_accuracy."
+}

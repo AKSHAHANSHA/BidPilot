@@ -1,0 +1,62 @@
+{
+  "_comment": "Fictional company the gold tenders are scored against. Shaped like EvidenceFact: only user-verified evidence counts in matching. Not a real company; no confidential data.",
+  "legal_name": "Al Mirqab Integrated Facilities Management LLC (fictional eval)",
+  "evidence": [
+    {
+      "id": "ev-iso9001",
+      "category": "certification",
+      "title": "ISO 9001:2015 Quality Management Certification",
+      "tags": ["iso 9001", "quality management", "certification"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-iso14001",
+      "category": "certification",
+      "title": "ISO 14001 Environmental Management Certification",
+      "tags": ["iso 14001", "environmental management", "certification"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-liability",
+      "category": "insurance",
+      "title": "Third-Party Liability Insurance Policy",
+      "tags": ["third-party", "liability", "insurance", "public liability"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-licence",
+      "category": "trade_licence",
+      "title": "Dubai DED Trade Licence - Facilities Management Activities",
+      "tags": ["trade licence", "facilities management", "hard fm", "soft fm"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-financials",
+      "category": "financial_statement",
+      "title": "Audited Financial Statements FY2024",
+      "tags": ["audited", "financial statements", "turnover"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-project-tower",
+      "category": "previous_project",
+      "title": "Commercial Tower MEP Maintenance - Business Bay",
+      "tags": ["hvac", "mep", "commercial tower", "hard fm", "experience"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-cv-fm",
+      "category": "staff_cv",
+      "title": "Facilities Manager CV - Certified FM Professional",
+      "tags": ["facilities manager", "cv", "certified", "key staff"],
+      "is_verified": true
+    },
+    {
+      "id": "ev-unverified-cyber",
+      "category": "certification",
+      "title": "ISO 27001 Information Security (application in progress)",
+      "tags": ["iso 27001", "information security", "cybersecurity"],
+      "is_verified": false
+    }
+  ]
+}

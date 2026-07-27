@@ -1,0 +1,165 @@
+{
+  "generated_at": "20260727T115616Z",
+  "mode": "mock",
+  "summary": {
+    "tenders": 5,
+    "requirement_precision": 1.0,
+    "requirement_recall": 1.0,
+    "mandatory_recall": 1.0,
+    "risk_precision": 1.0,
+    "risk_recall": 1.0,
+    "citation_validity_rate": 0.975,
+    "citation_accuracy": 1.0,
+    "evidence_match_accuracy": 0.96,
+    "score_in_range_rate": 1.0,
+    "label_expected_rate": 1.0,
+    "deterministic_rate": 1.0,
+    "total_input_tokens": 0,
+    "total_output_tokens": 0,
+    "total_cost_usd": 0.0,
+    "total_failures": 1
+  },
+  "tenders": [
+    {
+      "tender_id": "t1_fm_campus",
+      "title": "Integrated Facilities Management - Government Campus",
+      "requirement_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mandatory_recall": 1.0,
+      "risk_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "citation_validity_rate": 1.0,
+      "citation_accuracy": null,
+      "evidence_match_accuracy": 1.0,
+      "score": 63.7,
+      "decision_label": "conditional_bid",
+      "score_in_range": true,
+      "label_expected": true,
+      "deterministic": true,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "failures": []
+    },
+    {
+      "tender_id": "t2_it_smart_building",
+      "title": "Smart Building IT Managed Services",
+      "requirement_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mandatory_recall": 1.0,
+      "risk_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "citation_validity_rate": 1.0,
+      "citation_accuracy": null,
+      "evidence_match_accuracy": 1.0,
+      "score": 50.5,
+      "decision_label": "weak_bid",
+      "score_in_range": true,
+      "label_expected": true,
+      "deterministic": true,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "failures": []
+    },
+    {
+      "tender_id": "t3_soft_fm_cleaning",
+      "title": "Soft FM - Cleaning and Landscaping Services",
+      "requirement_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mandatory_recall": 1.0,
+      "risk_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "citation_validity_rate": 0.875,
+      "citation_accuracy": 1.0,
+      "evidence_match_accuracy": 1.0,
+      "score": 86.6,
+      "decision_label": "strong_bid",
+      "score_in_range": true,
+      "label_expected": true,
+      "deterministic": true,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "failures": []
+    },
+    {
+      "tender_id": "t4_civil_construction",
+      "title": "Civil Construction - New Warehouse Build",
+      "requirement_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mandatory_recall": 1.0,
+      "risk_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "citation_validity_rate": 1.0,
+      "citation_accuracy": null,
+      "evidence_match_accuracy": 0.8,
+      "score": 44.0,
+      "decision_label": "weak_bid",
+      "score_in_range": true,
+      "label_expected": true,
+      "deterministic": true,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "failures": [
+        {
+          "tender": "t4_civil_construction",
+          "kind": "evidence_match_mismatch",
+          "detail": "certification: gold=not_met got=partially_met ('Hold a valid ISO 45001 occupational health and saf')"
+        }
+      ]
+    },
+    {
+      "tender_id": "t5_catering_services",
+      "title": "Staff Catering and Pantry Services",
+      "requirement_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mandatory_recall": 1.0,
+      "risk_prf": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "citation_validity_rate": 1.0,
+      "citation_accuracy": null,
+      "evidence_match_accuracy": 1.0,
+      "score": 74.1,
+      "decision_label": "conditional_bid",
+      "score_in_range": true,
+      "label_expected": true,
+      "deterministic": true,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "failures": []
+    }
+  ]
+}

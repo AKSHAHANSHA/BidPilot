@@ -38,3 +38,11 @@ Thumbs.db
 frontend/*.tsbuildinfo
 frontend/src/*.tsbuildinfo
 *.tsbuildinfo
+
+# Evaluation: ignore timestamped runs, keep the committed sample
+backend/eval/reports/evaluation_*
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright/

@@ -172,7 +172,9 @@ def requirement_batch_json(count: int = 12) -> str:
                 "normalized_text": f"The bidder must satisfy requirement {i + 1}.",
                 "category": category,
                 "obligation": obligation,
-                "expected_evidence": ["trade licence", "certificate"],
+                # A discriminating term ("iso 9001") so a genuine match needs more than the shared
+                # category noun — mirrors the tightened matcher (see app/domain/matching.py).
+                "expected_evidence": ["trade licence", "iso 9001 certificate"],
                 "source_page": page,
                 "source_quote": quote,
                 "confidence": 0.9,

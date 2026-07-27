@@ -11,6 +11,7 @@ claim that the company lacks the capability (`docs/03` §9). Only user-verified 
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from app.domain.enums import EvidenceCategory, MatchStatus, RequirementCategory
@@ -67,7 +68,45 @@ _NOT_APPLICABLE_CATEGORIES = {
 
 
 def _tokens(text: str) -> set[str]:
-    return {t for t in text.casefold().replace("/", " ").replace("-", " ").split() if len(t) > 2}
+    # Split on any non-word run, so punctuation ("activities.", "iso/iec", "third-party") does not
+    # hide a real overlap. Tokens shorter than three characters carry too little signal.
+    return {t for t in re.split(r"\W+", text.casefold()) if len(t) > 2}
+
+
+#: Tokens too generic to prove a match on their own. A requirement and an evidence item almost
+#: always share the category noun ("insurance", "certificate", "trade licence", "iso"), so an
+#: overlap consisting only of these does not show the evidence actually satisfies the requirement
+#: — it just confirms both concern the same broad category. A MET match must share at least one
+#: *discriminating* term (e.g. "9001", "hvac"). Surfaced by the Phase 11 evaluation, which showed
+#: bare-category overlaps inflating out-of-domain tenders (see docs/08 D53).
+_GENERIC_MATCH_TOKENS = {
+    "iso",
+    "trade",
+    "licence",
+    "license",
+    "insurance",
+    "certificate",
+    "certification",
+    "certified",
+    "financial",
+    "statement",
+    "statements",
+    "project",
+    "projects",
+    "previous",
+    "policy",
+    "valid",
+    "hold",
+    "provide",
+    "service",
+    "services",
+    "company",
+    "bidder",
+    "contract",
+    "contractor",
+    "document",
+    "management",
+}
 
 
 def match_requirement(requirement: RequirementFact, evidence: list[EvidenceFact]) -> MatchOutcome:
@@ -110,7 +149,8 @@ def match_requirement(requirement: RequirementFact, evidence: list[EvidenceFact]
     }
     for candidate in candidates:
         have = _tokens(candidate.title) | {t for tag in candidate.tags for t in _tokens(tag)}
-        if want & have:
+        # A shared *discriminating* term (not just the category noun) is required for MET.
+        if (want & have) - _GENERIC_MATCH_TOKENS:
             return MatchOutcome(
                 status=MatchStatus.MET,
                 explanation=f"Matched verified evidence: {candidate.title}.",

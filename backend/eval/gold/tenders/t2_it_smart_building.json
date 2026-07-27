@@ -1,0 +1,147 @@
+{
+  "id": "t2_it_smart_building",
+  "title": "Smart Building IT Managed Services",
+  "buyer": "Fictional Property Technology Fund (demo)",
+  "reference": "GOLD-IT-2026-002",
+  "submission_deadline_offset_days": 20,
+  "notes": "IT/data-heavy tender. The FM company is a weak fit: no verified cyber certification, no IT experience. Short deadline. Expect weak_bid or do_not_bid.",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "SECTION A - SCOPE\n\nThe Fund seeks a supplier to operate and maintain the smart-building IT platform across its portfolio, including IoT sensor networks, building management system integration, and a 24/7 network operations centre. The supplier must provide round-the-clock monitoring and incident response for all connected systems."
+    },
+    {
+      "page_number": 2,
+      "text": "SECTION B - MANDATORY REQUIREMENTS\n\nThe bidder must hold a valid ISO 27001 information security certificate. The bidder must comply with the UAE data protection regulations for all personal data processed. The bidder must demonstrate at least three comparable IT managed-services engagements in the last five years. The bidder must provide professional indemnity insurance of at least AED 2,000,000. The bidder must hold a valid trade licence covering information technology services."
+    },
+    {
+      "page_number": 3,
+      "text": "SECTION C - COMMERCIAL AND RISK\n\nThe supplier shall meet a 99.9% platform availability service level, with service credits for any breach. All intellectual property developed under the contract shall vest in the Fund. Payment terms are 90 days from invoice acceptance. The Fund may terminate immediately for a single critical security breach."
+    }
+  ],
+  "requirements": [
+    {
+      "original_text": "The bidder must hold a valid ISO 27001 information security certificate.",
+      "normalized_text": "Hold a valid ISO 27001 information security certificate.",
+      "category": "data_cybersecurity",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "iso 27001 certificate"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid ISO 27001 information security certificate.",
+      "confidence": 0.95,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "The bidder must comply with the UAE data protection regulations for all personal data processed.",
+      "normalized_text": "Comply with UAE data protection regulations for personal data.",
+      "category": "data_cybersecurity",
+      "obligation": "mandatory",
+      "expected_evidence": [],
+      "source_page": 2,
+      "source_quote": "The bidder must comply with the UAE data protection regulations for all personal data processed.",
+      "confidence": 0.9,
+      "gold_match_status": "needs_clarification"
+    },
+    {
+      "original_text": "The bidder must demonstrate at least three comparable IT managed-services engagements in the last five years.",
+      "normalized_text": "Demonstrate three comparable IT managed-services engagements in five years.",
+      "category": "experience",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "previous it projects"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must demonstrate at least three comparable IT managed-services engagements in the last five years.",
+      "confidence": 0.92,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must provide professional indemnity insurance of at least AED 2,000,000.",
+      "normalized_text": "Provide professional indemnity insurance of at least AED 2,000,000.",
+      "category": "insurance",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "professional indemnity insurance"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must provide professional indemnity insurance of at least AED 2,000,000.",
+      "confidence": 0.9,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The bidder must hold a valid trade licence covering information technology services.",
+      "normalized_text": "Hold a valid trade licence covering information technology services.",
+      "category": "legal_registration",
+      "obligation": "mandatory",
+      "expected_evidence": [
+        "it trade licence"
+      ],
+      "source_page": 2,
+      "source_quote": "The bidder must hold a valid trade licence covering information technology services.",
+      "confidence": 0.88,
+      "gold_match_status": "partially_met"
+    },
+    {
+      "original_text": "The supplier shall meet a 99.9% platform availability service level, with service credits for any breach.",
+      "normalized_text": "Meet a 99.9% availability service level with service credits.",
+      "category": "technical_capability",
+      "obligation": "mandatory",
+      "expected_evidence": [],
+      "source_page": 3,
+      "source_quote": "The supplier shall meet a 99.9% platform availability service level, with service credits for any breach.",
+      "confidence": 0.85,
+      "gold_match_status": "needs_clarification"
+    }
+  ],
+  "risks": [
+    {
+      "risk_type": "intellectual_property",
+      "severity": "high",
+      "summary": "All IP vests in the Fund.",
+      "why_it_matters": "The supplier retains no rights to tooling it develops, limiting reuse.",
+      "suggested_action": "Negotiate a licence-back for background IP and generic tooling.",
+      "source_page": 3,
+      "source_quote": "All intellectual property developed under the contract shall vest in the Fund.",
+      "confidence": 0.9
+    },
+    {
+      "risk_type": "payment_terms",
+      "severity": "high",
+      "summary": "90-day payment terms.",
+      "why_it_matters": "Very long payment terms create significant working-capital exposure.",
+      "suggested_action": "Negotiate shorter terms or interim payments.",
+      "source_page": 3,
+      "source_quote": "Payment terms are 90 days from invoice acceptance.",
+      "confidence": 0.88
+    },
+    {
+      "risk_type": "termination",
+      "severity": "critical",
+      "summary": "Immediate termination on a single critical security breach.",
+      "why_it_matters": "Zero cure period for security incidents is an extreme contractual exposure.",
+      "suggested_action": "Seek a cure period and proportionate remedies.",
+      "source_page": 3,
+      "source_quote": "The Fund may terminate immediately for a single critical security breach.",
+      "confidence": 0.9
+    },
+    {
+      "risk_type": "data_privacy",
+      "severity": "high",
+      "summary": "Personal-data processing under UAE data protection law.",
+      "why_it_matters": "Non-compliance carries regulatory and contractual penalties.",
+      "suggested_action": "Confirm data-processing controls and appoint a data protection lead.",
+      "source_page": 2,
+      "source_quote": "The bidder must comply with the UAE data protection regulations for all personal data processed.",
+      "confidence": 0.82
+    }
+  ],
+  "expected_score_min": 42,
+  "expected_score_max": 60,
+  "expected_decision_labels": [
+    "do_not_bid",
+    "weak_bid"
+  ],
+  "score_range_note": "Calibrated to bracket current deterministic output; a regression guard, not a quality judgement. Fit quality is measured by evidence_match_accuracy."
+}
