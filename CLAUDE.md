@@ -17,6 +17,8 @@ Before architectural work, read:
 - `docs/06_IMPLEMENTATION_ROADMAP.md`
 - `docs/07_TEST_DEMO_DEPLOYMENT.md`
 
+For detailed project history and handoff context, read @docs/PROJECT_MEMORY.md only when the task requires it.
+
 ## Hard rules
 
 - Do not introduce microservices, Kubernetes, Kafka, enterprise SSO, billing, or complex multi-tenancy.
