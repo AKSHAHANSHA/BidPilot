@@ -1,0 +1,55 @@
+/* Fonts first: @import rules must precede all other rules. Self-host before deployment. */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+/* The Procurement Ledger — a warm-white editorial workspace (docs/05 §2). Not a generic
+   AI dashboard: paper tones, hairline rules, strong black dividers, editorial-red signals. */
+@theme {
+  --color-paper: #fbfaf5;
+  --color-surface: #ffffff;
+  --color-ink: #171714;
+  --color-ink-muted: #66635c;
+  --color-rule: #1d1d1a;
+  --color-rule-soft: #d8d4c9;
+  --color-signal: #b51f26;
+  --color-signal-soft: #f7e8e8;
+  --color-success: #1f6a4a;
+  --color-warning: #9a6100;
+  --color-danger: #a51d2d;
+  --color-info: #1f506f;
+
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Source Sans 3", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+
+  --radius-sm: 2px;
+  --radius: 3px;
+}
+
+html {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* Fine paper grain via a subtle repeating gradient — atmosphere without an image asset. */
+  background-image:
+    radial-gradient(var(--color-rule-soft) 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect reduced motion globally. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}

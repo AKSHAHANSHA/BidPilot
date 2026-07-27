@@ -33,3 +33,8 @@ frontend/dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Frontend build info
+frontend/*.tsbuildinfo
+frontend/src/*.tsbuildinfo
+*.tsbuildinfo
