@@ -18,7 +18,7 @@ Decisions: [docs/08_ENGINEERING_DECISIONS.md](docs/08_ENGINEERING_DECISIONS.md).
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | Complete |
 | 8 | Deterministic evidence matching, risk extraction, human review | Complete |
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | Complete |
-| 10 | Frontend | Not started |
+| 10 | Frontend core (auth, tender desk, upload, command center, company, notes) | Core complete; tail pending |
 | 11 | Evaluation and polish | Not started |
 | 12 | Deployment | Not started |
 
@@ -527,8 +527,51 @@ scoring → generating_report → completed`.
 
 ---
 
-## Phase 10 — Frontend (next; needs your visual approval)
+## Phase 10 — Frontend
 
-Not started. React 19 + TypeScript + Vite + Tailwind v4 against the generated OpenAPI types,
-per `PROMPT_2_BUILD_FRONTEND.md` and `docs/05_FRONTEND_SPEC.md`. Per the blocker policy this
-phase ends with a checkpoint for your subjective visual approval before it is finalized.
+**Core complete and visually approved.** React 19 + TypeScript (strict) + Vite + Tailwind v4,
+typed against the generated OpenAPI schema (`npm run gen:api`). The "Procurement Ledger" identity
+from `docs/05` — paper tones, hairline rules, editorial-red signals, Newsreader / Source Sans /
+IBM Plex Mono. Access token in memory with silent refresh via the HttpOnly cookie; TanStack Query
+for remote state; deep-link/reload restores the session.
+
+Pages: auth (login/register), tender desk, new tender + PDF upload, tender command center
+(readiness dial + decision stamp, hard-blocker notices, six weighted dimension rows, compliance
+matrix, risk register, slide-in source-citation drawer with quote highlighting, readiness
+override), company profile with derived expiry, engineering notes.
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` · `eslint` · `vite build` | all pass |
+| In-browser (real backend) | login, shell, tender desk, company profile with live expiry binding |
+| **Live command center** | the real-LLM analysis below rendered end to end: readiness 49/100 (weak bid), six dimensions, compliance matrix with per-requirement citation links (p.2 ✓) |
+| Design | **approved by the user** |
+
+### Live end-to-end run (closes the Phase 6/8 OpenAI gap)
+
+Against `gpt-5-mini` through the real Dramatiq worker, a 4-page sample tender
+(`backend/sample_data/sample_tender.pdf`) produced **14 citation-verified requirements** and
+**10 verified risks**, scored deterministically to **48.8 / weak_bid**, provider/model/tokens
+(2517/8310) and estimated cost (~$0.09) recorded. Two real provider bugs were found and fixed
+(commit `af1b6b0`): `gpt-5-mini` rejects a custom `temperature`, and OpenAI strict mode needs
+every property in `required` with `additionalProperties:false`.
+
+### Remaining tail (not yet built)
+
+- Company-profile **create/edit form** (currently read-only in the UI; profiles are created via
+  API or the seed script).
+- Evidence and project **create/edit forms**.
+- **CSV/JSON export** UI (the export endpoints themselves are Phase 11).
+- A tender **create form exists**; a richer new-tender dossier with drag-and-drop is polish.
+- Playwright critical-journey test (Phase 11).
+
+---
+
+## Phases 11–12 — not started
+
+- **Phase 11:** gold evaluation set + `scripts/evaluate_pipeline.py`, CSV/JSON export endpoints,
+  demo reset, Playwright critical journey, README polish.
+- **Phase 12:** lightweight deployment config (Render/Railway + Neon + Upstash), production-safe
+  settings, deployment docs. No paid infrastructure will be provisioned without explicit approval.

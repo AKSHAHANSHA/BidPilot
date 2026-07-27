@@ -33,6 +33,7 @@ working until its verification commands have been run.
 | 7 | Citation verification: exact/normalized/fuzzy matching, rejection of unsupported | **Complete** |
 | 8 | Deterministic evidence matching, cited risk extraction, human review | **Complete** |
 | 9 | Deterministic readiness scoring, hard blockers, report, human override | **Complete** |
+| 10 | Frontend core (React 19 / TS / Vite / Tailwind v4), design approved, live-verified | **Core complete** |
 | 4 | Page-aware extraction | Not started |
 | 5 | Background jobs and progress | Not started |
 | 6 | Requirement extraction | Not started |
@@ -116,6 +117,19 @@ Four rules hold throughout:
 - A human override **requires a reason** and preserves the original machine result.
 
 ---
+
+## Frontend
+
+```bash
+cd frontend
+npm install
+npm run gen:api      # regenerate types from backend/artifacts/openapi.json
+npm run dev          # http://localhost:5173 (proxies /api to the backend)
+```
+
+React 19 + TypeScript (strict) + Vite + Tailwind v4, typed against the generated OpenAPI schema.
+Access tokens live in memory with silent refresh via the HttpOnly cookie. Run the backend API
+and worker alongside it. See `docs/05_FRONTEND_SPEC.md` for the design system.
 
 ## Local setup
 
