@@ -35,7 +35,10 @@ from app.schemas.marketplace import (
     VendorDashboardSummary,
 )
 
-router = APIRouter(tags=["marketplace"])
+# Deliberately namespaced under `/market` so the marketplace routes cannot shadow the
+# existing `/company/*` endpoints (which manage the CompanyProfile's past-work portfolio and
+# evidence — a different concept from marketplace tenders).
+router = APIRouter(prefix="/market", tags=["marketplace"])
 
 
 _ROLE_MISMATCH: dict[int | str, dict[str, object]] = {

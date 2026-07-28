@@ -148,13 +148,13 @@ export async function searchProjects(query: string): Promise<ProjectListResponse
 // ---------------------------------------------------------------------------
 
 export async function fetchVendorDashboard(): Promise<VendorDashboardDto> {
-  const res = await authedFetch("/api/v1/vendor/dashboard/summary");
+  const res = await authedFetch("/api/v1/market/vendor/dashboard/summary");
   if (!res.ok) throw new Error("Could not load your dashboard");
   return res.json();
 }
 
 export async function fetchVendorApplications(): Promise<ApplicationSummaryDto[]> {
-  const res = await authedFetch("/api/v1/vendor/applications");
+  const res = await authedFetch("/api/v1/market/vendor/applications");
   if (!res.ok) throw new Error("Could not load applications");
   return res.json();
 }
@@ -163,7 +163,7 @@ export async function submitApplication(
   projectId: string,
   coverLetter: string,
 ): Promise<ApplicationDetailDto> {
-  const res = await authedFetch("/api/v1/vendor/applications", {
+  const res = await authedFetch("/api/v1/market/vendor/applications", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_id: projectId, cover_letter: coverLetter }),
@@ -192,13 +192,13 @@ export interface ProjectCreatePayload {
 }
 
 export async function fetchCompanyDashboard(): Promise<CompanyDashboardDto> {
-  const res = await authedFetch("/api/v1/company/dashboard/summary");
+  const res = await authedFetch("/api/v1/market/company/dashboard/summary");
   if (!res.ok) throw new Error("Could not load your dashboard");
   return res.json();
 }
 
 export async function fetchCompanyProjects(): Promise<ProjectSummaryDto[]> {
-  const res = await authedFetch("/api/v1/company/projects");
+  const res = await authedFetch("/api/v1/market/company/projects");
   if (!res.ok) throw new Error("Could not load your projects");
   return res.json();
 }
@@ -206,7 +206,7 @@ export async function fetchCompanyProjects(): Promise<ProjectSummaryDto[]> {
 export async function createCompanyProject(
   payload: ProjectCreatePayload,
 ): Promise<ProjectDetailDto> {
-  const res = await authedFetch("/api/v1/company/projects", {
+  const res = await authedFetch("/api/v1/market/company/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -221,7 +221,7 @@ export async function createCompanyProject(
 export async function fetchProjectApplicants(
   projectId: string,
 ): Promise<ApplicationSummaryDto[]> {
-  const res = await authedFetch(`/api/v1/company/projects/${projectId}/applications`);
+  const res = await authedFetch(`/api/v1/market/company/projects/${projectId}/applications`);
   if (!res.ok) throw new Error("Could not load applicants");
   return res.json();
 }
@@ -231,23 +231,23 @@ export async function fetchProjectApplicants(
 // ---------------------------------------------------------------------------
 
 export async function fetchNotifications(): Promise<NotificationDto[]> {
-  const res = await authedFetch("/api/v1/notifications");
+  const res = await authedFetch("/api/v1/market/notifications");
   if (!res.ok) return [];
   return res.json();
 }
 
 export async function fetchNotificationCounts(): Promise<{ unread: number; total: number }> {
-  const res = await authedFetch("/api/v1/notifications/counts");
+  const res = await authedFetch("/api/v1/market/notifications/counts");
   if (!res.ok) return { unread: 0, total: 0 };
   return res.json();
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
-  await authedFetch(`/api/v1/notifications/${id}/read`, { method: "PATCH" });
+  await authedFetch(`/api/v1/market/notifications/${id}/read`, { method: "PATCH" });
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  await authedFetch("/api/v1/notifications/read-all", { method: "PATCH" });
+  await authedFetch("/api/v1/market/notifications/read-all", { method: "PATCH" });
 }
 
 // ---------------------------------------------------------------------------
