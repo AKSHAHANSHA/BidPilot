@@ -12,7 +12,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.domain.categories import is_valid_category
 from app.domain.enums import ApplicationStatus, MarketProjectStatus
 
-
 # ---------------------------------------------------------------------------
 # Categories
 # ---------------------------------------------------------------------------

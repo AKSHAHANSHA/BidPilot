@@ -9,6 +9,7 @@ transaction as the application state change that produced them.
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -39,6 +40,19 @@ from app.schemas.marketplace import (
 from app.services.screening import ScreeningInput, screen_application
 
 
+@dataclass(frozen=True, slots=True)
+class VendorSummary:
+    stats: dict[str, int | float | None]
+    recent: list[Application]
+
+
+@dataclass(frozen=True, slots=True)
+class CompanySummary:
+    stats: dict[str, int | float | None]
+    projects: list[MarketProject]
+    recent_applications: list[Application]
+
+
 class MarketplaceService:
     def __init__(
         self,
@@ -66,9 +80,7 @@ class MarketplaceService:
 
     # --- Company writes ----------------------------------------------------
 
-    async def create_project(
-        self, *, company: User, payload: ProjectCreate
-    ) -> MarketProject:
+    async def create_project(self, *, company: User, payload: ProjectCreate) -> MarketProject:
         if company.account_type != AccountType.COMPANY.value:
             raise ConflictError("Only company accounts can post projects")
 
@@ -138,9 +150,7 @@ class MarketplaceService:
                 project_description=project.description,
                 project_category=project.category,
                 project_requirements=project.requirements_summary,
-                vendor_category=(
-                    vendor_profile.primary_category if vendor_profile else None
-                ),
+                vendor_category=(vendor_profile.primary_category if vendor_profile else None),
                 vendor_bio=vendor_profile.bio if vendor_profile else None,
                 cover_letter=payload.cover_letter,
                 document_original_name=document_original_name,
@@ -218,34 +228,26 @@ class MarketplaceService:
 
     # --- Vendor dashboard --------------------------------------------------
 
-    async def vendor_summary(self, vendor_id: uuid.UUID) -> dict[str, object]:
+    async def vendor_summary(self, vendor_id: uuid.UUID) -> VendorSummary:
         stats = await self.applications.vendor_summary(vendor_id)
         recent = await self.applications.list_for_vendor(vendor_id)
-        return {"stats": stats, "recent": recent}
+        return VendorSummary(stats=stats, recent=recent)
 
-    async def company_summary(self, company_id: uuid.UUID) -> dict[str, object]:
+    async def company_summary(self, company_id: uuid.UUID) -> CompanySummary:
         projects = await self.projects.list_for_company(company_id)
         stats = await self.applications.company_summary(company_id)
         recent = await self.applications.list_recent_for_company(company_id)
-        return {
-            "stats": stats,
-            "projects": projects,
-            "recent_applications": recent,
-        }
+        return CompanySummary(stats=stats, projects=projects, recent_applications=recent)
 
     # --- Notifications -----------------------------------------------------
 
-    async def list_notifications(
-        self, user_id: uuid.UUID
-    ) -> list[Notification]:
+    async def list_notifications(self, user_id: uuid.UUID) -> list[Notification]:
         return await self.notifications.list_for_user(user_id)
 
     async def notification_counts(self, user_id: uuid.UUID) -> tuple[int, int]:
         return await self.notifications.counts_for_user(user_id)
 
-    async def mark_notification_read(
-        self, user_id: uuid.UUID, notification_id: uuid.UUID
-    ) -> None:
+    async def mark_notification_read(self, user_id: uuid.UUID, notification_id: uuid.UUID) -> None:
         await self.notifications.mark_read(user_id, notification_id)
 
     async def mark_all_notifications_read(self, user_id: uuid.UUID) -> int:

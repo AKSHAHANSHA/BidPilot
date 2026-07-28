@@ -23,9 +23,7 @@ from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 class Notification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "notifications"
     __table_args__ = (
-        CheckConstraint(
-            f"kind IN ({NotificationKind.sql_in_list()})", name="notification_kind"
-        ),
+        CheckConstraint(f"kind IN ({NotificationKind.sql_in_list()})", name="notification_kind"),
         Index("ix_notifications_recipient_read", "recipient_user_id", "read_at"),
     )
 

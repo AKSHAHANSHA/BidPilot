@@ -36,9 +36,7 @@ class Application(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         # One application per vendor per project — a resubmit updates the row rather than
         # creating a duplicate.
-        UniqueConstraint(
-            "project_id", "vendor_user_id", name="uq_applications_project_vendor"
-        ),
+        UniqueConstraint("project_id", "vendor_user_id", name="uq_applications_project_vendor"),
         CheckConstraint(
             f"status IN ({ApplicationStatus.sql_in_list()})", name="application_status"
         ),
@@ -73,9 +71,7 @@ class Application(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=ApplicationStatus.SUBMITTED.value
     )
-    submitted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     review_note: Mapped[str | None] = mapped_column(String(2000), default=None)
 

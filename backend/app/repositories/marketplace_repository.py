@@ -15,8 +15,9 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any, cast
 
-from sqlalchemy import ColumnElement, func, or_, select, update
+from sqlalchemy import ColumnElement, CursorResult, Select, func, or_, select, update
 from sqlalchemy.sql.functions import concat
 
 from app.domain.enums import ApplicationStatus, MarketProjectStatus
@@ -50,7 +51,7 @@ class MarketProjectRepository(BaseRepository[MarketProject]):
             MarketProject.category.ilike(pattern, escape="\\"),
         )
 
-    def _apply_filters(self, base, filters: ProjectFilters):
+    def _apply_filters(self, base: Select[Any], filters: ProjectFilters) -> Select[Any]:
         if filters.only_public:
             base = base.where(MarketProject.is_public.is_(True))
         if filters.category:
@@ -71,9 +72,7 @@ class MarketProjectRepository(BaseRepository[MarketProject]):
         base = self._apply_filters(select(MarketProject), filters)
         total = int(
             (
-                await self.session.execute(
-                    select(func.count()).select_from(base.subquery())
-                )
+                await self.session.execute(select(func.count()).select_from(base.subquery()))
             ).scalar_one()
         )
         rows = await self.session.execute(
@@ -131,9 +130,7 @@ class ApplicationRepository(BaseRepository[Application]):
         )
         return result.scalar_one_or_none()
 
-    async def get_existing(
-        self, project_id: uuid.UUID, vendor_id: uuid.UUID
-    ) -> Application | None:
+    async def get_existing(self, project_id: uuid.UUID, vendor_id: uuid.UUID) -> Application | None:
         result = await self.session.execute(
             select(Application).where(
                 Application.project_id == project_id,
@@ -223,18 +220,14 @@ class ApplicationRepository(BaseRepository[Application]):
         total, avg = total_result.one()
         return {
             "total_applicants": int(total or 0),
-            "average_applicant_score": (
-                round(float(avg), 1) if avg is not None else None
-            ),
+            "average_applicant_score": (round(float(avg), 1) if avg is not None else None),
         }
 
 
 class NotificationRepository(BaseRepository[Notification]):
     model = Notification
 
-    async def list_for_user(
-        self, user_id: uuid.UUID, *, limit: int = 50
-    ) -> list[Notification]:
+    async def list_for_user(self, user_id: uuid.UUID, *, limit: int = 50) -> list[Notification]:
         result = await self.session.execute(
             select(Notification)
             .where(Notification.recipient_user_id == user_id)
@@ -265,7 +258,7 @@ class NotificationRepository(BaseRepository[Notification]):
             )
             .values(read_at=datetime.now(tz=UTC))
         )
-        return bool(result.rowcount)
+        return bool(cast("CursorResult[Any]", result).rowcount)
 
     async def mark_all_read(self, user_id: uuid.UUID) -> int:
         result = await self.session.execute(
@@ -276,4 +269,4 @@ class NotificationRepository(BaseRepository[Notification]):
             )
             .values(read_at=datetime.now(tz=UTC))
         )
-        return int(result.rowcount or 0)
+        return int(cast("CursorResult[Any]", result).rowcount or 0)

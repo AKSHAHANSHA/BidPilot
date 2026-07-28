@@ -27,9 +27,7 @@ router = APIRouter(prefix="/public", tags=["public"])
 
 @router.get("/categories", response_model=list[CategoryRead], summary="Marketplace categories")
 async def list_categories() -> list[CategoryRead]:
-    return [
-        CategoryRead(slug=c.slug, label=c.label, icon=c.icon) for c in PROJECT_CATEGORIES
-    ]
+    return [CategoryRead(slug=c.slug, label=c.label, icon=c.icon) for c in PROJECT_CATEGORIES]
 
 
 @router.get(

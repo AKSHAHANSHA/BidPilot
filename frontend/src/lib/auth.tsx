@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await api.POST("/api/v1/auth/login", { body: { email, password } });
     if (error || !data) throw new Error(problemMessage(error));
     setAccessToken(data.access_token);
-    setUser(data.user as User);
+    setUser(data.user as unknown as User);
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {

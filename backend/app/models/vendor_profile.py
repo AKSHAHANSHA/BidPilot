@@ -19,9 +19,7 @@ from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 
 class VendorProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "vendor_profiles"
-    __table_args__ = (
-        UniqueConstraint("owner_user_id", name="uq_vendor_profiles_owner_user_id"),
-    )
+    __table_args__ = (UniqueConstraint("owner_user_id", name="uq_vendor_profiles_owner_user_id"),)
 
     owner_user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),

@@ -103,16 +103,13 @@ def screen_application(payload: ScreeningInput) -> ScreeningResult:
 
     # Category alignment: strongest single signal (30 points).
     category_match = (
-        payload.vendor_category is not None
-        and payload.vendor_category == payload.project_category
+        payload.vendor_category is not None and payload.vendor_category == payload.project_category
     )
     category_score = 30 if category_match else 10
     if category_match:
         reasons.append("Vendor's primary category matches the project category.")
     else:
-        reasons.append(
-            "Vendor's primary category does not exactly match the project category."
-        )
+        reasons.append("Vendor's primary category does not exactly match the project category.")
 
     # Keyword overlap between the vendor's cover letter/bio and the project text (0..25).
     project_terms = _tokenize(
@@ -155,7 +152,7 @@ def screen_application(payload: ScreeningInput) -> ScreeningResult:
     if required_certs:
         covered = required_certs & supplied
         coverage_ratio = len(covered) / len(required_certs)
-        cert_score = int(round(25 * coverage_ratio))
+        cert_score = round(25 * coverage_ratio)
         if coverage_ratio == 1:
             reasons.append(
                 f"All named certifications appear in the vendor's submission: "
@@ -181,9 +178,7 @@ def screen_application(payload: ScreeningInput) -> ScreeningResult:
     # Document supplied at all: 10 or 0.
     if payload.document_original_name:
         document_score = 10
-        reasons.append(
-            f"Supporting document supplied: {payload.document_original_name}."
-        )
+        reasons.append(f"Supporting document supplied: {payload.document_original_name}.")
     else:
         document_score = 0
         reasons.append("No supporting document uploaded; add credentials to raise the score.")
@@ -225,9 +220,6 @@ def screen_application(payload: ScreeningInput) -> ScreeningResult:
     else:
         summary_prefix = "Weak fit"
 
-    summary = (
-        f"{summary_prefix} ({score}/100). "
-        + " ".join(reasons[:3])
-    )
+    summary = f"{summary_prefix} ({score}/100). " + " ".join(reasons[:3])
 
     return ScreeningResult(score=score, summary=summary, breakdown=breakdown)

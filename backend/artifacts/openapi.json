@@ -271,6 +271,241 @@
         "title": "AnalysisStatus",
         "type": "string"
       },
+      "ApplicationCreate": {
+        "properties": {
+          "cover_letter": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ApplicationCreate",
+        "type": "object"
+      },
+      "ApplicationDetail": {
+        "properties": {
+          "ai_assessment": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Assessment"
+          },
+          "ai_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Score"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary"
+          },
+          "document_original_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Original Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "review_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Note"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "vendor_user_id": {
+            "format": "uuid",
+            "title": "Vendor User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "vendor_user_id",
+          "status",
+          "ai_score",
+          "ai_summary",
+          "submitted_at",
+          "ai_assessment",
+          "document_original_name",
+          "reviewed_at",
+          "review_note"
+        ],
+        "title": "ApplicationDetail",
+        "type": "object"
+      },
+      "ApplicationReview": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ApplicationReview",
+        "type": "object"
+      },
+      "ApplicationStatus": {
+        "description": "A vendor's submission to a marketplace project.",
+        "enum": [
+          "submitted",
+          "screening",
+          "screened",
+          "shortlisted",
+          "rejected",
+          "withdrawn"
+        ],
+        "title": "ApplicationStatus",
+        "type": "string"
+      },
+      "ApplicationSummary": {
+        "properties": {
+          "ai_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Score"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "vendor_user_id": {
+            "format": "uuid",
+            "title": "Vendor User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "vendor_user_id",
+          "status",
+          "ai_score",
+          "ai_summary",
+          "submitted_at"
+        ],
+        "title": "ApplicationSummary",
+        "type": "object"
+      },
       "Body_upload_document_api_v1_tenders__tender_id__documents_post": {
         "properties": {
           "file": {
@@ -283,6 +518,29 @@
           "file"
         ],
         "title": "Body_upload_document_api_v1_tenders__tender_id__documents_post",
+        "type": "object"
+      },
+      "CategoryRead": {
+        "properties": {
+          "icon": {
+            "title": "Icon",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "label",
+          "icon"
+        ],
+        "title": "CategoryRead",
         "type": "object"
       },
       "CitationMatchMethod": {
@@ -344,6 +602,49 @@
           "match_score"
         ],
         "title": "CitationRead",
+        "type": "object"
+      },
+      "CompanyDashboardSummary": {
+        "properties": {
+          "average_applicant_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Applicant Score"
+          },
+          "open_projects": {
+            "title": "Open Projects",
+            "type": "integer"
+          },
+          "recent_applications": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSummary"
+            },
+            "title": "Recent Applications",
+            "type": "array"
+          },
+          "total_applicants": {
+            "title": "Total Applicants",
+            "type": "integer"
+          },
+          "total_projects": {
+            "title": "Total Projects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_projects",
+          "open_projects",
+          "total_applicants",
+          "average_applicant_score",
+          "recent_applications"
+        ],
+        "title": "CompanyDashboardSummary",
         "type": "object"
       },
       "CompanyProfileCreate": {
@@ -1839,6 +2140,103 @@
         "title": "LogoutResponse",
         "type": "object"
       },
+      "MarketProjectStatus": {
+        "description": "Lifecycle of a marketplace project (tender) posted by a company.",
+        "enum": [
+          "draft",
+          "open",
+          "closed",
+          "awarded"
+        ],
+        "title": "MarketProjectStatus",
+        "type": "string"
+      },
+      "NotificationCounts": {
+        "properties": {
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unread",
+          "total"
+        ],
+        "title": "NotificationCounts",
+        "type": "object"
+      },
+      "NotificationRead": {
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "payload",
+          "read_at",
+          "created_at"
+        ],
+        "title": "NotificationRead",
+        "type": "object"
+      },
       "Page_EvidenceRead_": {
         "properties": {
           "items": {
@@ -2057,128 +2455,148 @@
         "title": "ProblemDetail",
         "type": "object"
       },
-      "ProjectCreate": {
+      "ProjectDetail": {
         "properties": {
-          "client_name": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Client Name",
-            "type": "string"
-          },
-          "client_reference_available": {
-            "default": false,
-            "title": "Client Reference Available",
-            "type": "boolean"
-          },
-          "contract_value": {
+          "budget_aed": {
             "anyOf": [
               {
-                "maximum": 99999999999.99,
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Contract Value"
+            "title": "Budget Aed"
           },
-          "currency": {
-            "default": "AED",
-            "maxLength": 3,
-            "minLength": 3,
-            "pattern": "^[A-Z]{3}$",
-            "title": "Currency",
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "company_display_name": {
+            "title": "Company Display Name",
+            "type": "string"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
             "type": "string"
           },
           "description": {
-            "maxLength": 4000,
-            "minLength": 1,
             "title": "Description",
             "type": "string"
           },
-          "end_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Date"
-          },
-          "industry": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Industry",
+          "id": {
+            "format": "uuid",
+            "title": "Id",
             "type": "string"
-          },
-          "is_confidential": {
-            "default": false,
-            "title": "Is Confidential",
-            "type": "boolean"
           },
           "location": {
-            "maxLength": 160,
-            "minLength": 1,
-            "title": "Location",
-            "type": "string"
-          },
-          "outcome": {
             "anyOf": [
               {
-                "maxLength": 4000,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Outcome"
+            "title": "Location"
           },
-          "project_title": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Project Title",
+          "posted_by_user_id": {
+            "format": "uuid",
+            "title": "Posted By User Id",
             "type": "string"
           },
-          "services_delivered": {
-            "items": {
-              "maxLength": 120,
-              "minLength": 1,
-              "type": "string"
-            },
-            "maxItems": 30,
-            "minItems": 1,
-            "title": "Services Delivered",
-            "type": "array"
-          },
-          "start_date": {
-            "format": "date",
-            "title": "Start Date",
-            "type": "string"
+          "requirements_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requirements Summary"
           },
           "status": {
-            "$ref": "#/components/schemas/ProjectStatus"
+            "title": "Status",
+            "type": "string"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Deadline"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
           }
         },
         "required": [
-          "client_name",
-          "project_title",
-          "industry",
-          "description",
-          "start_date",
-          "status",
+          "id",
+          "title",
+          "company_display_name",
+          "category",
           "location",
-          "services_delivered"
+          "budget_aed",
+          "submission_deadline",
+          "cover_image_url",
+          "status",
+          "created_at",
+          "description",
+          "requirements_summary",
+          "posted_by_user_id"
         ],
-        "title": "ProjectCreate",
+        "title": "ProjectDetail",
+        "type": "object"
+      },
+      "ProjectListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ProjectListResponse",
         "type": "object"
       },
       "ProjectRead": {
@@ -2320,6 +2738,28 @@
         "title": "ProjectRead",
         "type": "object"
       },
+      "ProjectSearchRequest": {
+        "properties": {
+          "limit": {
+            "default": 12,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "query": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "ProjectSearchRequest",
+        "type": "object"
+      },
       "ProjectStatus": {
         "enum": [
           "completed",
@@ -2328,118 +2768,52 @@
         "title": "ProjectStatus",
         "type": "string"
       },
-      "ProjectUpdate": {
-        "additionalProperties": false,
+      "ProjectSummary": {
         "properties": {
-          "client_name": {
+          "budget_aed": {
             "anyOf": [
               {
-                "maxLength": 255,
-                "minLength": 1,
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Client Name"
+            "title": "Budget Aed"
           },
-          "client_reference_available": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "company_display_name": {
+            "title": "Company Display Name",
+            "type": "string"
+          },
+          "cover_image_url": {
             "anyOf": [
               {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Client Reference Available"
-          },
-          "contract_value": {
-            "anyOf": [
-              {
-                "maximum": 99999999999.99,
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Contract Value"
+            "title": "Cover Image Url"
           },
-          "currency": {
-            "anyOf": [
-              {
-                "maxLength": 3,
-                "minLength": 3,
-                "pattern": "^[A-Z]{3}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currency"
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
           },
-          "description": {
-            "anyOf": [
-              {
-                "maxLength": 4000,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "end_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Date"
-          },
-          "industry": {
-            "anyOf": [
-              {
-                "maxLength": 120,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Industry"
-          },
-          "is_confidential": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Confidential"
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
           },
           "location": {
             "anyOf": [
               {
-                "maxLength": 160,
-                "minLength": 1,
                 "type": "string"
               },
               {
@@ -2448,73 +2822,40 @@
             ],
             "title": "Location"
           },
-          "outcome": {
-            "anyOf": [
-              {
-                "maxLength": 4000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outcome"
-          },
-          "project_title": {
-            "anyOf": [
-              {
-                "maxLength": 255,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Title"
-          },
-          "services_delivered": {
-            "anyOf": [
-              {
-                "items": {
-                  "maxLength": 120,
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "maxItems": 30,
-                "minItems": 1,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Services Delivered"
-          },
-          "start_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Date"
-          },
           "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submission_deadline": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProjectStatus"
+                "format": "date-time",
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Submission Deadline"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
           }
         },
-        "title": "ProjectUpdate",
+        "required": [
+          "id",
+          "title",
+          "company_display_name",
+          "category",
+          "location",
+          "budget_aed",
+          "submission_deadline",
+          "cover_image_url",
+          "status",
+          "created_at"
+        ],
+        "title": "ProjectSummary",
         "type": "object"
       },
       "ReadinessOverrideRequest": {
@@ -2633,6 +2974,27 @@
       },
       "RegisterRequest": {
         "properties": {
+          "account_type": {
+            "default": "vendor",
+            "enum": [
+              "vendor",
+              "company"
+            ],
+            "title": "Account Type",
+            "type": "string"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
           "display_name": {
             "examples": [
               "Tender Coordinator"
@@ -2650,6 +3012,18 @@
             "title": "Email",
             "type": "string"
           },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
           "password": {
             "examples": [
               "a-long-passphrase-1"
@@ -2658,6 +3032,18 @@
             "minLength": 12,
             "title": "Password",
             "type": "string"
+          },
+          "primary_category": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Category"
           }
         },
         "required": [
@@ -3323,6 +3709,14 @@
       },
       "UserRead": {
         "properties": {
+          "account_type": {
+            "enum": [
+              "vendor",
+              "company"
+            ],
+            "title": "Account Type",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -3352,6 +3746,7 @@
           "email",
           "display_name",
           "is_active",
+          "account_type",
           "created_at"
         ],
         "title": "UserRead",
@@ -3397,6 +3792,59 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VendorDashboardSummary": {
+        "properties": {
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSummary"
+            },
+            "title": "Applications",
+            "type": "array"
+          },
+          "average_ai_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Ai Score"
+          },
+          "rejected": {
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "screened": {
+            "title": "Screened",
+            "type": "integer"
+          },
+          "shortlisted": {
+            "title": "Shortlisted",
+            "type": "integer"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "total_applications": {
+            "title": "Total Applications",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_applications",
+          "submitted",
+          "screened",
+          "shortlisted",
+          "rejected",
+          "average_ai_score",
+          "applications"
+        ],
+        "title": "VendorDashboardSummary",
+        "type": "object"
+      },
       "VerificationStatus": {
         "description": "Whether the user has confirmed this evidence themselves.\n\nOnly `verified` evidence may be treated as approved when matching tender requirements\n(`docs/03_AI_PIPELINE_AND_SCORING.md` \u00a78).",
         "enum": [
@@ -3406,6 +3854,444 @@
         ],
         "title": "VerificationStatus",
         "type": "string"
+      },
+      "app__schemas__marketplace__ProjectCreate": {
+        "properties": {
+          "budget_aed": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Aed"
+          },
+          "category": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Category",
+            "type": "string"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "description": {
+            "maxLength": 8000,
+            "minLength": 20,
+            "title": "Description",
+            "type": "string"
+          },
+          "is_public": {
+            "default": true,
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "requirements_summary": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requirements Summary"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Deadline"
+          },
+          "title": {
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "category"
+        ],
+        "title": "ProjectCreate",
+        "type": "object"
+      },
+      "app__schemas__marketplace__ProjectUpdate": {
+        "properties": {
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketProjectStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "app__schemas__project__ProjectCreate": {
+        "properties": {
+          "client_name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Client Name",
+            "type": "string"
+          },
+          "client_reference_available": {
+            "default": false,
+            "title": "Client Reference Available",
+            "type": "boolean"
+          },
+          "contract_value": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Value"
+          },
+          "currency": {
+            "default": "AED",
+            "maxLength": 3,
+            "minLength": 3,
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "industry": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Industry",
+            "type": "string"
+          },
+          "is_confidential": {
+            "default": false,
+            "title": "Is Confidential",
+            "type": "boolean"
+          },
+          "location": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Location",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "project_title": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Project Title",
+            "type": "string"
+          },
+          "services_delivered": {
+            "items": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Services Delivered",
+            "type": "array"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        },
+        "required": [
+          "client_name",
+          "project_title",
+          "industry",
+          "description",
+          "start_date",
+          "status",
+          "location",
+          "services_delivered"
+        ],
+        "title": "ProjectCreate",
+        "type": "object"
+      },
+      "app__schemas__project__ProjectUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "client_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name"
+          },
+          "client_reference_available": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Reference Available"
+          },
+          "contract_value": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Value"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "maxLength": 3,
+                "minLength": 3,
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "is_confidential": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Confidential"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "project_title": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Title"
+          },
+          "services_delivered": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 30,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Services Delivered"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ProjectUpdate",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -4028,6 +4914,56 @@
         ]
       }
     },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "description": "Demo stub. Real email delivery is not wired up. Always returns 202 with a generic message, whether or not the address is registered, so an attacker cannot use this endpoint to enumerate accounts. The reset flow is future work.",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Forgot Password Api V1 Auth Forgot Password Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request a password reset link (stub)",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "description": "Returns a short-lived access token and sets an HttpOnly refresh cookie. A failed attempt always returns the same message, whether or not the account exists.",
@@ -4570,6 +5506,130 @@
         "summary": "Create the company profile",
         "tags": [
           "company"
+        ]
+      }
+    },
+    "/api/v1/company/applications/{application_id}": {
+      "patch": {
+        "operationId": "company_review_application_api_v1_company_applications__application_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationReview"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Review an application (shortlist / reject)",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/company/dashboard/summary": {
+      "get": {
+        "operationId": "company_dashboard_api_v1_company_dashboard_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDashboardSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aggregates for the company dashboard",
+        "tags": [
+          "marketplace"
         ]
       }
     },
@@ -5126,7 +6186,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectCreate"
+                "$ref": "#/components/schemas/app__schemas__project__ProjectCreate"
               }
             }
           },
@@ -5326,7 +6386,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectUpdate"
+                "$ref": "#/components/schemas/app__schemas__project__ProjectUpdate"
               }
             }
           },
@@ -5382,6 +6442,78 @@
         "summary": "Update a project",
         "tags": [
           "company"
+        ]
+      }
+    },
+    "/api/v1/company/projects/{project_id}/applications": {
+      "get": {
+        "operationId": "company_list_applicants_api_v1_company_projects__project_id__applications_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationSummary"
+                  },
+                  "title": "Response Company List Applicants Api V1 Company Projects  Project Id  Applications Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Applicants for a project the signed-in company posted",
+        "tags": [
+          "marketplace"
         ]
       }
     },
@@ -5725,6 +6857,374 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "list_notifications_api_v1_notifications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationRead"
+                  },
+                  "title": "Response List Notifications Api V1 Notifications Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Notifications for the signed-in user",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/notifications/counts": {
+      "get": {
+        "operationId": "notification_counts_api_v1_notifications_counts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationCounts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unread/total notification counts",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "patch": {
+        "operationId": "mark_all_notifications_read_api_v1_notifications_read_all_patch",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Mark All Notifications Read Api V1 Notifications Read All Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark every notification read",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "patch": {
+        "operationId": "mark_notification_read_api_v1_notifications__notification_id__read_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark a notification read",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/public/categories": {
+      "get": {
+        "operationId": "list_categories_api_v1_public_categories_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryRead"
+                  },
+                  "title": "Response List Categories Api V1 Public Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Marketplace categories",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/projects": {
+      "get": {
+        "operationId": "list_projects_api_v1_public_projects_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "budget_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "budget_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse public marketplace projects",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/projects/search": {
+      "post": {
+        "description": "Ranked token-overlap search across title, description, category, and company name. No LLM call \u2014 deterministic and free. Wired to the landing page's chat-style input.",
+        "operationId": "search_projects_api_v1_public_projects_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Free-text search over the marketplace",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/projects/{project_id}": {
+      "get": {
+        "operationId": "get_project_api_v1_public_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public project detail",
+        "tags": [
+          "public"
         ]
       }
     },
@@ -6675,6 +8175,166 @@
         "summary": "Upload a tender PDF",
         "tags": [
           "tenders"
+        ]
+      }
+    },
+    "/api/v1/vendor/applications": {
+      "get": {
+        "operationId": "vendor_list_applications_api_v1_vendor_applications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationSummary"
+                  },
+                  "title": "Response Vendor List Applications Api V1 Vendor Applications Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Applications submitted by the signed-in vendor",
+        "tags": [
+          "marketplace"
+        ]
+      },
+      "post": {
+        "operationId": "vendor_apply_api_v1_vendor_applications_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply to a marketplace project (vendor only)",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/vendor/dashboard/summary": {
+      "get": {
+        "operationId": "vendor_dashboard_api_v1_vendor_dashboard_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDashboardSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aggregates for the vendor dashboard",
+        "tags": [
+          "marketplace"
         ]
       }
     }

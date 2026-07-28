@@ -52,6 +52,10 @@ def _require(account_type: str, current: CurrentUser) -> None:
         )
 
 
+def _to_float(value: int | float | None) -> float | None:
+    return None if value is None else float(value)
+
+
 # ---------------------------------------------------------------------------
 # Company: post & manage projects
 # ---------------------------------------------------------------------------
@@ -119,9 +123,7 @@ async def company_list_applicants(
     marketplace: MarketplaceServiceDep,
 ) -> list[ApplicationSummary]:
     _require(AccountType.COMPANY.value, current_user)
-    rows = await marketplace.applications.list_for_project_by_company(
-        project_id, current_user.id
-    )
+    rows = await marketplace.applications.list_for_project_by_company(project_id, current_user.id)
     return [ApplicationSummary.model_validate(r) for r in rows]
 
 
@@ -155,16 +157,15 @@ async def company_dashboard(
 ) -> CompanyDashboardSummary:
     _require(AccountType.COMPANY.value, current_user)
     summary = await marketplace.company_summary(current_user.id)
-    projects = summary["projects"]  # type: ignore[assignment]
-    stats = summary["stats"]  # type: ignore[assignment]
-    recent = summary["recent_applications"]  # type: ignore[assignment]
-    open_count = sum(1 for p in projects if p.status == "open")
+    open_count = sum(1 for p in summary.projects if p.status == "open")
     return CompanyDashboardSummary(
-        total_projects=len(projects),
+        total_projects=len(summary.projects),
         open_projects=open_count,
-        total_applicants=int(stats.get("total_applicants", 0) or 0),
-        average_applicant_score=stats.get("average_applicant_score"),
-        recent_applications=[ApplicationSummary.model_validate(r) for r in recent],
+        total_applicants=int(summary.stats.get("total_applicants", 0) or 0),
+        average_applicant_score=_to_float(summary.stats.get("average_applicant_score")),
+        recent_applications=[
+            ApplicationSummary.model_validate(r) for r in summary.recent_applications
+        ],
     )
 
 
@@ -222,16 +223,15 @@ async def vendor_dashboard(
 ) -> VendorDashboardSummary:
     _require(AccountType.VENDOR.value, current_user)
     result = await marketplace.vendor_summary(current_user.id)
-    stats = result["stats"]  # type: ignore[assignment]
-    recent = result["recent"]  # type: ignore[assignment]
+    stats = result.stats
     return VendorDashboardSummary(
         total_applications=int(stats.get("total", 0) or 0),
         submitted=int(stats.get("submitted", 0) or 0),
         screened=int(stats.get("screened", 0) or 0),
         shortlisted=int(stats.get("shortlisted", 0) or 0),
         rejected=int(stats.get("rejected", 0) or 0),
-        average_ai_score=stats.get("average"),
-        applications=[ApplicationSummary.model_validate(r) for r in recent],
+        average_ai_score=_to_float(stats.get("average")),
+        applications=[ApplicationSummary.model_validate(r) for r in result.recent],
     )
 
 

@@ -50,11 +50,11 @@ from app.models import (  # noqa: E402
 )
 
 COMPANY_EMAIL = "gov-authority@tendersphere.ae"
-COMPANY_PASSWORD = "tendersphere-demo-passphrase-1"
+COMPANY_PASSWORD = "tendersphere-demo-passphrase-1"  # noqa: S105 — demo passphrase
 COMPANY_DISPLAY_NAME = "Emirates Government Procurement Authority"
 
 VENDOR_EMAIL = "vendor@tendersphere.ae"
-VENDOR_PASSWORD = "tendersphere-vendor-passphrase-1"
+VENDOR_PASSWORD = "tendersphere-vendor-passphrase-1"  # noqa: S105 — demo passphrase
 VENDOR_DISPLAY_NAME = "Falcon Facilities LLC"
 
 
@@ -183,9 +183,7 @@ PROJECT_SEEDS: tuple[dict[str, object], ...] = (
             "RFID-tagged inventory across a 3-year framework."
         ),
         "requirements_summary": (
-            "- OEKO-TEX certified fabrics\n"
-            "- ISO 9001\n"
-            "- UAE local manufacturing preferred"
+            "- OEKO-TEX certified fabrics\n- ISO 9001\n- UAE local manufacturing preferred"
         ),
         "cover": _cover("uniform,police,fabric"),
     },
@@ -199,10 +197,7 @@ PROJECT_SEEDS: tuple[dict[str, object], ...] = (
             "Full technical, environmental, and financial feasibility for a 400 t/day "
             "waste-to-energy plant. Deliverables include an EIA scoping document."
         ),
-        "requirements_summary": (
-            "- ISO 14001\n"
-            "- 2+ WtE feasibility references in the MENA region"
-        ),
+        "requirements_summary": ("- ISO 14001\n- 2+ WtE feasibility references in the MENA region"),
         "cover": _cover("waste,recycling,plant"),
     },
 )
