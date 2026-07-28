@@ -32,6 +32,12 @@ class RegisterRequest(BaseModel):
     email: EmailStr = Field(examples=["coordinator@fm-demo.ae"])
     password: Password = Field(examples=["a-long-passphrase-1"])
     display_name: str = Field(min_length=1, max_length=120, examples=["Tender Coordinator"])
+    #: Marketplace layer role. Defaults to `vendor` — the majority of new signups on the
+    #: landing page are contractors looking for work; company signups are opt-in.
+    account_type: Literal["vendor", "company"] = "vendor"
+    location: str | None = Field(default=None, max_length=120)
+    primary_category: str | None = Field(default=None, max_length=80)
+    bio: str | None = Field(default=None, max_length=2000)
 
     @field_validator("display_name")
     @classmethod
@@ -72,6 +78,7 @@ class UserRead(BaseModel):
     email: EmailStr
     display_name: str
     is_active: bool
+    account_type: Literal["vendor", "company"]
     created_at: datetime
 
 

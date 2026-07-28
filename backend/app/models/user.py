@@ -8,6 +8,7 @@ from sqlalchemy import Boolean, CheckConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.domain.enums import AccountType
 from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -20,6 +21,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         # The application lower-cases before insert; this makes the invariant the database's
         # rule too, so a future script or manual fix cannot create a duplicate-by-case account.
         CheckConstraint("email = lower(email)", name="email_lowercase"),
+        CheckConstraint(f"account_type IN ({AccountType.sql_in_list()})", name="account_type"),
     )
 
     #: Stored lower-cased so the unique constraint is genuinely case-insensitive; a database
@@ -28,6 +30,11 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    #: Marketplace layer role. Legacy users pre-marketplace are backfilled as `vendor` — the
+    #: bid-readiness self-check is a vendor-only feature going forward.
+    account_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=AccountType.VENDOR.value
+    )
 
     sessions: Mapped[list[RefreshSession]] = relationship(
         back_populates="user",

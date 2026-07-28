@@ -10,6 +10,7 @@ import uuid
 
 from sqlalchemy import select
 
+from app.domain.enums import AccountType
 from app.models.user import User
 from app.repositories.base import BaseRepository
 
@@ -38,11 +39,19 @@ class UserRepository(BaseRepository[User]):
         )
         return result.scalar_one_or_none() is not None
 
-    def create(self, *, email: str, password_hash: str, display_name: str) -> User:
+    def create(
+        self,
+        *,
+        email: str,
+        password_hash: str,
+        display_name: str,
+        account_type: str = AccountType.VENDOR.value,
+    ) -> User:
         user = User(
             email=normalize_email(email),
             password_hash=password_hash,
             display_name=display_name.strip(),
             is_active=True,
+            account_type=account_type,
         )
         return self.add(user)
