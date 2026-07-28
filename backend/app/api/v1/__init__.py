@@ -12,6 +12,8 @@ from app.api.v1 import (
     auth,
     company,
     health,
+    marketplace,
+    public,
     readiness,
     requirements,
     risks,
@@ -21,6 +23,8 @@ from app.api.v1 import (
 api_router = APIRouter()
 api_router.include_router(health.router)
 api_router.include_router(auth.router)
+api_router.include_router(public.router)
+api_router.include_router(marketplace.router)
 api_router.include_router(company.router)
 api_router.include_router(tenders.router)
 api_router.include_router(analyses.router)

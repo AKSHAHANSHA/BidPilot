@@ -42,7 +42,7 @@ export function NewTenderPage() {
           throw new Error(problemMessage(problem));
         }
       }
-      navigate(`/tenders/${tenderId}`);
+      navigate(`/self-check/${tenderId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the tender.");
     } finally {

@@ -9,18 +9,31 @@ import {
 } from "react";
 import { api, onAuthChange, setAccessToken, problemMessage } from "../api/client";
 
-interface User {
+export type AccountType = "vendor" | "company";
+
+export interface User {
   id: string;
   email: string;
   display_name: string;
   is_active: boolean;
+  account_type: AccountType;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  display_name: string;
+  account_type: AccountType;
+  location?: string;
+  primary_category?: string;
+  bio?: string;
 }
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -30,12 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount, try to restore a session via the refresh cookie, then load the user.
+  // On mount, try to restore a session via the refresh cookie.
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include" });
+        const res = await fetch("/api/v1/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
         if (res.ok) {
           const body = (await res.json()) as { access_token: string; user: User };
           setAccessToken(body.access_token);
@@ -52,10 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // If a background refresh (triggered by an expired access token on some later request)
-  // definitively fails — the refresh cookie itself is gone or invalid — clear the signed-in
-  // state so route protection sends the user back to the sign-in screen instead of leaving
-  // stale UI that will keep failing.
   useEffect(() => {
     return onAuthChange((token) => {
       if (token === null) setUser((prev) => (prev ? null : prev));
@@ -66,20 +78,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await api.POST("/api/v1/auth/login", { body: { email, password } });
     if (error || !data) throw new Error(problemMessage(error));
     setAccessToken(data.access_token);
-    setUser(data.user as User);
+    setUser(data.user as unknown as User);
   }, []);
 
-  const register = useCallback(
-    async (email: string, password: string, displayName: string) => {
-      const { data, error } = await api.POST("/api/v1/auth/register", {
-        body: { email, password, display_name: displayName },
-      });
-      if (error || !data) throw new Error(problemMessage(error));
-      setAccessToken(data.access_token);
-      setUser(data.user as User);
-    },
-    [],
-  );
+  const register = useCallback(async (payload: RegisterPayload) => {
+    // Sent via raw fetch: RegisterRequest was extended with account_type + role fields after
+    // the checked-in OpenAPI schema, so the typed openapi-fetch call would flag them as
+    // unknown. The backend validates the same fields either way.
+    const res = await fetch("/api/v1/auth/register", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(body?.detail ?? body?.title ?? "Registration failed");
+    }
+    setAccessToken(body.access_token);
+    setUser(body.user as User);
+  }, []);
 
   const logout = useCallback(async () => {
     await api.POST("/api/v1/auth/logout", {});

@@ -28,8 +28,10 @@ from app.core.security import (
     spend_dummy_verification,
     verify_password,
 )
+from app.domain.enums import AccountType
 from app.models.refresh_session import RefreshSession
 from app.models.user import User
+from app.models.vendor_profile import VendorProfile
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.repositories.user_repository import UserRepository, normalize_email
 
@@ -80,7 +82,16 @@ class AuthService:
     # --- Registration ------------------------------------------------------------------
 
     async def register(
-        self, *, email: str, password: str, display_name: str, client: ClientContext
+        self,
+        *,
+        email: str,
+        password: str,
+        display_name: str,
+        client: ClientContext,
+        account_type: str = AccountType.VENDOR.value,
+        location: str | None = None,
+        primary_category: str | None = None,
+        bio: str | None = None,
     ) -> AuthResult:
         """Create an account and sign the new user in.
 
@@ -88,6 +99,11 @@ class AuthService:
         a deliberate, documented trade-off (see `docs/08_ENGINEERING_DECISIONS.md`): the
         alternative, a fake success, makes the demo confusing and is defeated anyway by the
         login form.
+
+        For vendor signups, a lightweight `VendorProfile` row is created in the same
+        transaction using the supplied role-specific fields (marketplace layer). Company
+        signups create no auxiliary rows here — companies fill in their existing rich
+        `CompanyProfile` after sign-in.
         """
         normalized = normalize_email(email)
         if await self.users.email_exists(normalized):
@@ -97,6 +113,7 @@ class AuthService:
             email=normalized,
             password_hash=hash_password(password),
             display_name=display_name,
+            account_type=account_type,
         )
         try:
             await self.users.flush()
@@ -105,7 +122,23 @@ class AuthService:
             # real arbiter, and it just rejected this one.
             raise ConflictError("An account with this email address already exists.") from exc
 
-        logger.info("user_registered", extra={"user_id": str(user.id)})
+        if account_type == AccountType.VENDOR.value:
+            self.users.session.add(
+                VendorProfile(
+                    owner_user_id=user.id,
+                    display_name=display_name,
+                    location=location,
+                    primary_category=primary_category,
+                    bio=bio,
+                    contact_email=normalized,
+                )
+            )
+            await self.users.flush()
+
+        logger.info(
+            "user_registered",
+            extra={"user_id": str(user.id), "account_type": account_type},
+        )
         return await self._issue_tokens(user, client)
 
     # --- Login -------------------------------------------------------------------------

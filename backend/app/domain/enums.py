@@ -244,3 +244,44 @@ class RevenueRange(VocabularyEnum):
     FROM_5M_TO_20M = "5m_to_20m_aed"
     FROM_20M_TO_50M = "20m_to_50m_aed"
     OVER_50M = "over_50m_aed"
+
+
+class AccountType(VocabularyEnum):
+    """Whether a user posts tenders (company) or applies to them (vendor).
+
+    Marketplace layer, orthogonal to the original single-role BidPilot analysis pipeline.
+    A user's original CompanyProfile / evidence still works either way — it becomes the
+    vendor's capability record.
+    """
+
+    VENDOR = "vendor"
+    COMPANY = "company"
+
+
+class MarketProjectStatus(VocabularyEnum):
+    """Lifecycle of a marketplace project (tender) posted by a company."""
+
+    DRAFT = "draft"
+    OPEN = "open"
+    CLOSED = "closed"
+    AWARDED = "awarded"
+
+
+class ApplicationStatus(VocabularyEnum):
+    """A vendor's submission to a marketplace project."""
+
+    SUBMITTED = "submitted"
+    SCREENING = "screening"
+    SCREENED = "screened"
+    SHORTLISTED = "shortlisted"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
+class NotificationKind(VocabularyEnum):
+    """Small set of platform events. Kept narrow so the UI can render each one deterministically."""
+
+    APPLICATION_RECEIVED = "application_received"
+    APPLICATION_SCREENED = "application_screened"
+    APPLICATION_STATUS_CHANGED = "application_status_changed"
+    PROJECT_PUBLISHED = "project_published"

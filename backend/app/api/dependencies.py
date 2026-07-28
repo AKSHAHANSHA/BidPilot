@@ -26,6 +26,11 @@ from app.repositories.company_repository import (
     CompanyProfileRepository,
     CompanyProjectRepository,
 )
+from app.repositories.marketplace_repository import (
+    ApplicationRepository,
+    MarketProjectRepository,
+    NotificationRepository,
+)
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.repositories.requirement_repository import RequirementRepository
 from app.repositories.risk_repository import RiskRepository
@@ -34,6 +39,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.analysis_service import AnalysisService
 from app.services.auth_service import AuthService, ClientContext
 from app.services.company_service import CompanyService
+from app.services.marketplace_service import MarketplaceService
 from app.services.readiness_service import ReadinessService
 from app.services.requirement_service import RequirementService
 from app.services.risk_service import RiskService
@@ -170,6 +176,17 @@ def get_readiness_service(session: SessionDep) -> ReadinessService:
 
 
 ReadinessServiceDep = Annotated[ReadinessService, Depends(get_readiness_service)]
+
+
+def get_marketplace_service(session: SessionDep) -> MarketplaceService:
+    return MarketplaceService(
+        projects=MarketProjectRepository(session),
+        applications=ApplicationRepository(session),
+        notifications=NotificationRepository(session),
+    )
+
+
+MarketplaceServiceDep = Annotated[MarketplaceService, Depends(get_marketplace_service)]
 
 
 async def get_current_user(
