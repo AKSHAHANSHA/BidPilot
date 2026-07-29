@@ -55,7 +55,7 @@ export function TenderDeskPage() {
           <p className="text-sm text-ink-muted mb-4">
             Upload your first tender PDF to see extracted requirements, risks, and a readiness score.
           </p>
-          <Link to="/tenders/new" className="text-signal underline text-sm">
+          <Link to="/self-check/new" className="text-signal underline text-sm">
             Create your first tender →
           </Link>
         </Card>
@@ -75,7 +75,7 @@ export function TenderDeskPage() {
               {items.map((t) => (
                 <tr key={t.id} className="border-b border-rule-soft hover:bg-paper">
                   <td className="px-4 py-3">
-                    <Link to={`/tenders/${t.id}`} className="font-medium hover:text-signal">
+                    <Link to={`/self-check/${t.id}`} className="font-medium hover:text-signal">
                       {t.title}
                     </Link>
                   </td>

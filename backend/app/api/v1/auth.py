@@ -166,6 +166,28 @@ async def register(
 
 
 @router.post(
+    "/forgot-password",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Request a password reset link (stub)",
+    description=(
+        "Demo stub. Real email delivery is not wired up. Always returns 202 with a generic "
+        "message, whether or not the address is registered, so an attacker cannot use this "
+        "endpoint to enumerate accounts. The reset flow is future work."
+    ),
+)
+async def forgot_password(payload: dict[str, str]) -> dict[str, str]:
+    # Deliberately does no work. Kept as a real endpoint so the frontend link is not dead
+    # and so the OpenAPI schema documents the intended surface. Logging a token here would
+    # violate the rule against printing secrets to server logs — even a demo one.
+    return {
+        "message": (
+            "If that email is registered, a password-reset link has been sent. "
+            "Follow the instructions in the message to complete the reset."
+        )
+    }
+
+
+@router.post(
     "/login",
     response_model=TokenResponse,
     summary="Sign in with email and password",

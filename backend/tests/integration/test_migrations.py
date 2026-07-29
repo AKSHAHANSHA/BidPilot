@@ -19,7 +19,7 @@ from tests.integration.conftest import alembic_config
 
 pytestmark = pytest.mark.integration
 
-EXPECTED_HEAD = "0009"
+EXPECTED_HEAD = "0010"
 EXPECTED_TABLES = (
     "users",
     "refresh_sessions",
@@ -37,6 +37,11 @@ EXPECTED_TABLES = (
     "risk_findings",
     "risk_citations",
     "readiness_assessments",
+    # 0010 — marketplace layer.
+    "vendor_profiles",
+    "market_projects",
+    "applications",
+    "notifications",
 )
 
 
@@ -121,9 +126,13 @@ async def test_upgrade_is_repeatable_after_downgrade() -> None:
 async def test_single_step_downgrade_removes_only_the_latest_tables() -> None:
     await upgrade()
     await downgrade("-1")
-    assert await read_revision() == "0008"
-    # Phase 9's table is gone; earlier phases' remain.
-    assert await table_exists("readiness_assessments") is False
+    assert await read_revision() == "0009"
+    # 0010's tables are gone; every earlier phase's remains.
+    assert await table_exists("applications") is False
+    assert await table_exists("market_projects") is False
+    assert await table_exists("vendor_profiles") is False
+    assert await table_exists("notifications") is False
+    assert await table_exists("readiness_assessments") is True
     assert await table_exists("risk_findings") is True
     assert await table_exists("requirements") is True
     assert await table_exists("company_profiles") is True
@@ -146,8 +155,9 @@ async def test_email_lowercase_check_constraint_is_enforced() -> None:
             with pytest.raises(Exception, match="ck_users_email_lowercase"):
                 await connection.execute(
                     text(
-                        "INSERT INTO users (id, email, password_hash, display_name, is_active) "
-                        "VALUES (gen_random_uuid(), 'Mixed@Case.test', 'x', 'x', true)"
+                        "INSERT INTO users "
+                        "(id, email, password_hash, display_name, is_active, account_type) "
+                        "VALUES (gen_random_uuid(), 'Mixed@Case.test', 'x', 'x', true, 'vendor')"
                     )
                 )
     finally:

@@ -33,10 +33,11 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-
     #: Which side of the marketplace this account is on. Chosen at registration and never
     #: changed: an account's listings and applications would be nonsense if its side could
     #: flip, and `Organisation.account_type` caches this value on the assumption it cannot.
+    #: Accounts created before the marketplace are backfilled as `vendor`, which is what they
+    #: were — the original product was a single bidder analysing tenders sent to them.
     account_type: Mapped[str] = mapped_column(
         String(16), nullable=False, default=AccountType.VENDOR.value
     )
