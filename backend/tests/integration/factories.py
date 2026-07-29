@@ -31,6 +31,36 @@ async def make_user(session: AsyncSession, label: str = "owner") -> User:
     return user
 
 
+def registration_payload(**overrides: object) -> dict[str, object]:
+    """A registration body that passes every validator.
+
+    Registration gained a required `organisation` block when the marketplace was added, so the
+    shape is defined once here. Pass `organisation={...}` to replace the whole block, or use
+    `registration_organisation()` to vary one field of it.
+    """
+    payload: dict[str, object] = {
+        "email": f"coordinator-{uuid.uuid4().hex[:10]}@fm-demo.ae",
+        "password": DEMO_PASSWORD,
+        "display_name": "Tender Coordinator",
+        "account_type": "vendor",
+        "organisation": registration_organisation(),
+    }
+    payload.update(overrides)
+    return payload
+
+
+def registration_organisation(**overrides: object) -> dict[str, object]:
+    """Only the four fields the schema actually requires, so a test notices if that changes."""
+    organisation: dict[str, object] = {
+        "name": "Al Mirqab Integrated Facilities Management LLC",
+        "description": "Integrated facilities management across the northern emirates.",
+        "emirate": "dubai",
+        "contact_email": "tenders@fm-demo.ae",
+    }
+    organisation.update(overrides)
+    return organisation
+
+
 async def make_profile(
     session: AsyncSession,
     owner_user_id: uuid.UUID,

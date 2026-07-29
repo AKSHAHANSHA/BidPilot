@@ -22,6 +22,13 @@ from app.core.constants import MIN_JWT_SECRET_LENGTH
 
 AppEnv = Literal["development", "test", "production"]
 StorageBackend = Literal["local", "s3"]
+#: How transactional mail leaves the process. `log` is a real transport, not a stub: it
+#: records the rendered message so a developer or a demo can follow the link.
+MailTransport = Literal["log", "smtp"]
+#: Where an enqueued pipeline actually runs. `worker` hands the job to Redis for the Dramatiq
+#: process; `inline` runs it inside the request that created it, which is the only option on a
+#: host that cannot run a second process (see `deploy/VERCEL.md`).
+JobExecution = Literal["worker", "inline"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +93,10 @@ class Settings(BaseSettings):
 
     # --- Redis / worker ------------------------------------------------------------
     redis_url: str = "redis://localhost:56379/0"
+    #: `worker` is the default because inline execution blocks the submitting request for the
+    #: whole pipeline and dies with it if the host's request timeout expires first. That is an
+    #: acceptable trade only where there is no worker process to run the job instead.
+    job_execution: JobExecution = "worker"
 
     # --- Authentication ------------------------------------------------------------
     jwt_secret: str = Field(min_length=MIN_JWT_SECRET_LENGTH)
@@ -141,6 +152,49 @@ class Settings(BaseSettings):
     llm_max_retries: Annotated[int, Field(ge=0, le=5)] = 2
     prompt_version: str = "1.0.0"
     scoring_version: str = "1.0.0"
+
+    # --- Portal: password reset ----------------------------------------------------
+    password_reset_ttl_minutes: Annotated[int, Field(ge=5, le=1440)] = 60
+    password_reset_max_attempts: Annotated[int, Field(ge=1, le=100)] = 5
+    password_reset_window_seconds: Annotated[int, Field(ge=60, le=86400)] = 3600
+    #: Where a reset link points. The token is appended as a query parameter, so this must be
+    #: a page the frontend serves, not an API route. (S105: a URL shape, not a credential —
+    #: `{token}` is a substitution placeholder.)
+    password_reset_url_template: str = "{frontend_origin}/reset-password?token={token}"  # noqa: S105
+
+    # --- Portal: mail delivery -----------------------------------------------------
+    #: `log` writes the message to the application log and is the default: a portfolio demo
+    #: should not need SMTP credentials to prove the reset flow works, and a silently
+    #: mis-delivered email is worse than one the developer can read in the console.
+    mail_transport: MailTransport = "log"
+    mail_from_address: str = "no-reply@bidpilot.local"
+    mail_from_name: str = "BidPilot"
+    smtp_host: str | None = None
+    smtp_port: Annotated[int, Field(ge=1, le=65535)] = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = True
+
+    # --- Portal: OCR ----------------------------------------------------------------
+    #: Off by default because it depends on a system binary. When disabled, pages without a
+    #: text layer are counted and reported as unreadable — never assumed blank.
+    ocr_enabled: bool = False
+    #: Tesseract language pack(s), e.g. "eng" or "eng+ara" for bilingual UAE paperwork.
+    ocr_languages: str = "eng"
+    #: A page whose native text is shorter than this is treated as scanned and sent to OCR.
+    #: Cover pages and stamps legitimately carry very little text, so the bar is low.
+    ocr_min_native_chars: Annotated[int, Field(ge=0, le=10_000)] = 40
+    #: Render resolution for OCR. 300 is the usual floor for reliable recognition; higher
+    #: costs memory per page with little accuracy gain on office documents.
+    ocr_dpi: Annotated[int, Field(ge=72, le=600)] = 300
+    #: Bound on how many pages one submission may send to OCR. OCR is orders of magnitude
+    #: slower than native extraction, and an unbounded scan would monopolise the worker.
+    ocr_max_pages: Annotated[int, Field(ge=1, le=500)] = 30
+
+    # --- Portal: uploads and search -------------------------------------------------
+    max_application_documents: Annotated[int, Field(ge=1, le=100)] = 20
+    #: Upper bound on rows returned by the public natural-language search.
+    search_max_results: Annotated[int, Field(ge=1, le=100)] = 24
 
     # --- Validators ----------------------------------------------------------------
 

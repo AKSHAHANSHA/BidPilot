@@ -12,6 +12,7 @@ from app.core.config import Settings
 from app.core.constants import PROBLEM_JSON_MEDIA_TYPE
 from tests.integration.factories import (
     iso,
+    registration_payload,
     valid_evidence_payload,
     valid_profile_payload,
     valid_project_payload,
@@ -32,7 +33,7 @@ async def sign_up(client: AsyncClient, label: str = "user") -> Signed:
     email = f"{label}-{uuid.uuid4().hex[:12]}@fm-demo.ae"
     response = await client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "display_name": "Coordinator"},
+        json=registration_payload(email=email, password=PASSWORD, display_name="Coordinator"),
     )
     assert response.status_code == 201, response.text
     client.cookies.clear()

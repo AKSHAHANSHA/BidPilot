@@ -1,6 +1,15 @@
 {
   "components": {
     "schemas": {
+      "AccountType": {
+        "description": "Which side of the marketplace an account sits on.\n\nChosen at registration and immutable afterwards: an account's listings and applications\nare meaningless if its side can flip underneath them. Changing sides means a new account.",
+        "enum": [
+          "company",
+          "vendor"
+        ],
+        "title": "AccountType",
+        "type": "string"
+      },
       "AnalysisErrorCode": {
         "description": "Safe, machine-readable failure reason. Developer detail lives in logs only.",
         "enum": [
@@ -271,6 +280,791 @@
         "title": "AnalysisStatus",
         "type": "string"
       },
+      "ApplicantRead": {
+        "description": "The buyer's view of one applicant on their listing.\n\nDeliberately does not inherit from `ApplicationRead`. `estimated_cost` and\n`margin_amount` are absent by construction, so no future field on the vendor's view can\nreach a buyer through this schema (`docs/09` \u00a710 rule 8).\n\n`vendor_organisation` is an `OrganisationSummary`: a buyer sees who bid and where they\nare, not the vendor's contact block.",
+        "properties": {
+          "bid_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Amount"
+          },
+          "cover_letter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The vendor's pitch, written for you.",
+            "title": "Cover Letter"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "proposed_duration_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Duration Months"
+          },
+          "screening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the vendor submits and screening runs. Applicants are ranked by `overall_score`."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "vendor_organisation": {
+            "$ref": "#/components/schemas/OrganisationSummary"
+          }
+        },
+        "required": [
+          "id",
+          "vendor_organisation",
+          "cover_letter",
+          "bid_amount",
+          "proposed_duration_months",
+          "status",
+          "submitted_at",
+          "decided_at",
+          "decision_note",
+          "screening"
+        ],
+        "title": "ApplicantRead",
+        "type": "object"
+      },
+      "ApplicationCreate": {
+        "additionalProperties": false,
+        "description": "A new draft application against a published listing.\n\n`status` is absent: an application is born a draft and moves through `/submit` and\n`/withdraw`, which can enforce their preconditions. The buyer's decision has its own\nendpoint and its own schema.",
+        "properties": {
+          "bid_amount": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the vendor is charging. Shown to the buyer.",
+            "title": "Bid Amount"
+          },
+          "cover_letter": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the vendor expects the work to cost them. Private to the vendor and never serialised into a buyer-facing response.",
+            "title": "Estimated Cost"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "proposed_duration_months": {
+            "anyOf": [
+              {
+                "maximum": 600.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Duration Months"
+          }
+        },
+        "required": [
+          "listing_id"
+        ],
+        "title": "ApplicationCreate",
+        "type": "object"
+      },
+      "ApplicationDecision": {
+        "additionalProperties": false,
+        "description": "`PATCH /applications/{id}/decision` \u2014 the buyer's verdict.\n\nThe status is restricted to the three a buyer may actually set. `withdrawn` belongs to the\nvendor, and `draft`/`submitted`/`under_review` are pipeline states, not decisions.",
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The buyer's stated reason. Shown to the vendor verbatim.",
+            "title": "Note"
+          },
+          "status": {
+            "enum": [
+              "shortlisted",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ApplicationDecision",
+        "type": "object"
+      },
+      "ApplicationDocumentRead": {
+        "description": "A file attached to an application. Metadata only \u2014 the bytes are fetched separately.",
+        "properties": {
+          "application_id": {
+            "format": "uuid",
+            "title": "Application Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "declared_document_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequiredDocumentType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the vendor said this file is. A hint for screening, never a verdict."
+          },
+          "declared_document_type_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable form of `declared_document_type`.",
+            "readOnly": true,
+            "title": "Declared Document Type Label"
+          },
+          "detected_document_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequiredDocumentType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What screening concluded it actually is, from the extracted text."
+          },
+          "detected_document_type_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable form of `detected_document_type`.",
+            "readOnly": true,
+            "title": "Detected Document Type Label"
+          },
+          "extraction_status": {
+            "$ref": "#/components/schemas/DocumentExtractionStatus"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "sha256": {
+            "description": "Content hash. Two identical uploads on one application are rejected.",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "application_id",
+          "original_filename",
+          "mime_type",
+          "size_bytes",
+          "sha256",
+          "page_count",
+          "extraction_status",
+          "declared_document_type",
+          "detected_document_type",
+          "created_at",
+          "declared_document_type_label",
+          "detected_document_type_label"
+        ],
+        "title": "ApplicationDocumentRead",
+        "type": "object"
+      },
+      "ApplicationRead": {
+        "description": "The vendor's own view of their application.\n\nCarries `estimated_cost` and `margin_amount` because the vendor owns both. Never return\nthis shape to a buyer \u2014 see `ApplicantRead`.\n\n`listing`, `documents`, and `screening` are populated from relationships, so the service\nmust load them eagerly; a lazy load inside serialisation fails under async SQLAlchemy.",
+        "properties": {
+          "bid_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Amount"
+          },
+          "cover_letter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The buyer's reason, in the buyer's words.",
+            "title": "Decision Note"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationDocumentRead"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor-private. Never appears in a buyer-facing schema.",
+            "title": "Estimated Cost"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ListingCard"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "margin_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`bid_amount - estimated_cost`. Derived on read, null when either figure is missing, and negative when the bid is below cost.",
+            "title": "Margin Amount"
+          },
+          "proposed_duration_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Duration Months"
+          },
+          "screening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          }
+        },
+        "required": [
+          "id",
+          "listing_id",
+          "listing",
+          "status",
+          "cover_letter",
+          "bid_amount",
+          "estimated_cost",
+          "margin_amount",
+          "proposed_duration_months",
+          "submitted_at",
+          "decided_at",
+          "withdrawn_at",
+          "decision_note",
+          "documents",
+          "screening",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ApplicationRead",
+        "type": "object"
+      },
+      "ApplicationStatus": {
+        "description": "Lifecycle of a vendor's application to a listing.\n\nMaps directly onto the vendor dashboard's counters. `SUBMITTED` and `UNDER_REVIEW` are\nseparate so \"waiting for an answer\" means the buyer has actually opened it, not merely\nthat the vendor pressed send.",
+        "enum": [
+          "draft",
+          "submitted",
+          "under_review",
+          "shortlisted",
+          "approved",
+          "rejected",
+          "withdrawn"
+        ],
+        "title": "ApplicationStatus",
+        "type": "string"
+      },
+      "ApplicationSummary": {
+        "description": "One row of the vendor's application list.\n\nEverything `ApplicationRead` has except the attached documents, which the list query does\nnot load \u2014 reading them here would emit one query per row, and a page of twenty-five bids\ndoes not need twenty-five file listings to render.\n\nDeclared here rather than in `app/schemas/application.py` only because that module is\nowned elsewhere; it belongs beside its sibling shapes. Whoever moves it may instead delete\nit and use `ApplicationRead`, provided `ApplicationRepository.list_for_vendor` starts\neager-loading `Application.documents` \u2014 today it does not, and serialising `ApplicationRead`\nfrom that query fails at read time rather than at import time.",
+        "properties": {
+          "bid_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Amount"
+          },
+          "cover_letter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ListingCard"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "margin_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Amount"
+          },
+          "proposed_duration_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Duration Months"
+          },
+          "screening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          }
+        },
+        "required": [
+          "id",
+          "listing_id",
+          "listing",
+          "status",
+          "cover_letter",
+          "bid_amount",
+          "estimated_cost",
+          "margin_amount",
+          "proposed_duration_months",
+          "submitted_at",
+          "decided_at",
+          "withdrawn_at",
+          "decision_note",
+          "screening",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ApplicationSummary",
+        "type": "object"
+      },
+      "ApplicationUpdate": {
+        "additionalProperties": false,
+        "description": "Partial update of a draft. Omitted fields are left untouched.",
+        "properties": {
+          "bid_amount": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Amount"
+          },
+          "cover_letter": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost"
+          },
+          "proposed_duration_months": {
+            "anyOf": [
+              {
+                "maximum": 600.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Duration Months"
+          }
+        },
+        "title": "ApplicationUpdate",
+        "type": "object"
+      },
+      "Body_upload_application_document_api_v1_applications__application_id__documents_post": {
+        "properties": {
+          "declared_document_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequiredDocumentType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_application_document_api_v1_applications__application_id__documents_post",
+        "type": "object"
+      },
       "Body_upload_document_api_v1_tenders__tender_id__documents_post": {
         "properties": {
           "file": {
@@ -283,6 +1077,33 @@
           "file"
         ],
         "title": "Body_upload_document_api_v1_tenders__tender_id__documents_post",
+        "type": "object"
+      },
+      "CategoryCount": {
+        "description": "One row of `GET /public/categories`.\n\nCategories with no published listings are still returned \u2014 the landing page renders the\nwhole taxonomy, and a category that vanished when its last listing closed would make the\nnavigation flicker.",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/TenderCategory"
+          },
+          "count": {
+            "description": "Published listings in this category.",
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "description": "Human-readable form of `category`.",
+            "readOnly": true,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "count",
+          "label"
+        ],
+        "title": "CategoryCount",
         "type": "object"
       },
       "CitationMatchMethod": {
@@ -1310,6 +2131,112 @@
         "title": "DocumentRead",
         "type": "object"
       },
+      "DocumentRequirementRead": {
+        "properties": {
+          "display_order": {
+            "title": "Display Order",
+            "type": "integer"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/RequiredDocumentType"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_mandatory": {
+            "title": "Is Mandatory",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Human-readable form of `document_type`.",
+            "readOnly": true,
+            "title": "Label",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "document_type",
+          "is_mandatory",
+          "weight",
+          "notes",
+          "display_order",
+          "label"
+        ],
+        "title": "DocumentRequirementRead",
+        "type": "object"
+      },
+      "DocumentRequirementWrite": {
+        "additionalProperties": false,
+        "description": "One checklist entry as the buyer submits it.\n\n`display_order` is absent deliberately: the order of the list in the request body *is* the\ndisplay order, so a body cannot carry an arrangement that contradicts itself.",
+        "properties": {
+          "document_type": {
+            "$ref": "#/components/schemas/RequiredDocumentType"
+          },
+          "is_mandatory": {
+            "default": true,
+            "description": "Mandatory items gate the submission; optional ones only move the score.",
+            "title": "Is Mandatory",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The buyer's own wording, e.g. \"valid for 90 days beyond closing\".",
+            "title": "Notes"
+          },
+          "weight": {
+            "default": 1,
+            "description": "Relative importance within the mandatory or optional band. Bounded so one requirement cannot dominate the whole score.",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document_type"
+        ],
+        "title": "DocumentRequirementWrite",
+        "type": "object"
+      },
+      "DocumentScreeningVerdict": {
+        "description": "Per-requirement outcome of screening a submission's documents.\n\n`UNREADABLE` is separate from `MISSING` on purpose: a scanned page that OCR could not read\nis a fixable upload problem, and telling a vendor \"missing\" when they did supply the file\nis both wrong and unactionable (`docs/03` \u00a79 \u2014 absence is not proof of non-existence).\n\n`UNVERIFIED` is separate again. It means the document arrived and was read, but the\ncredential it asserts could not be confirmed against the issuing registry \u2014 the number is\nnot on file, or is recorded as withdrawn. Reporting that as `MISSING` would tell a vendor\nto upload a document they already uploaded; reporting it as `PRESENT` would let an\nunverifiable claim earn full credit.",
+        "enum": [
+          "present",
+          "present_expired",
+          "present_unreadable",
+          "present_unverified",
+          "missing",
+          "not_applicable"
+        ],
+        "title": "DocumentScreeningVerdict",
+        "type": "string"
+      },
       "Emirate": {
         "description": "The seven emirates. Fixed by geography, so a check constraint is safe here.",
         "enum": [
@@ -1744,6 +2671,110 @@
         "title": "ExpiryState",
         "type": "string"
       },
+      "FindingRead": {
+        "description": "One requirement's verdict with the evidence behind it.\n\nThere is exactly one finding per checklist entry, including the ones nothing satisfied \u2014\nthe absence *is* the finding. No separate `id` is exposed: `document_type` is unique\nwithin a screening (the database says so), which makes it the natural key for the UI.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The classifier's self-reported confidence. Advisory only \u2014 it never scales the score.",
+            "title": "Confidence"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/RequiredDocumentType"
+          },
+          "evidence_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Verbatim text from the matched page, re-checked against the stored page text before this finding was written.",
+            "title": "Evidence Quote"
+          },
+          "is_mandatory": {
+            "description": "Copied from the requirement when the screening ran, so a later edit to the checklist cannot change what this result was measured against.",
+            "title": "Is Mandatory",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Human-readable form of `document_type`.",
+            "readOnly": true,
+            "title": "Label",
+            "type": "string"
+          },
+          "matched_document_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The upload that satisfied this requirement. Always present for a `present` or `present_expired` verdict \u2014 a match with nothing behind it is not a match.",
+            "title": "Matched Document Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reviewer-facing explanation, e.g. \"licence expires before closing\".",
+            "title": "Note"
+          },
+          "source_page": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1-based page the evidence quote was verified on.",
+            "title": "Source Page"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/DocumentScreeningVerdict"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document_type",
+          "verdict",
+          "is_mandatory",
+          "weight",
+          "matched_document_id",
+          "source_page",
+          "evidence_quote",
+          "note",
+          "confidence",
+          "label"
+        ],
+        "title": "FindingRead",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1790,6 +2821,925 @@
           "reason"
         ],
         "title": "HumanOverrideRead",
+        "type": "object"
+      },
+      "ListingCard": {
+        "description": "One item in the public catalogue grid.\n\nEverything here is safe for an unauthenticated caller: no owner identity, no applicant\nidentities, no buyer contact details.",
+        "properties": {
+          "application_count": {
+            "description": "Applications received so far. A denormalised counter, not a live count.",
+            "title": "Application Count",
+            "type": "integer"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "category": {
+            "$ref": "#/components/schemas/TenderCategory"
+          },
+          "category_label": {
+            "description": "Human-readable form of `category`.",
+            "readOnly": true,
+            "title": "Category Label",
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "days_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whole days until the submission deadline. Negative once it has passed, null when the listing has no deadline. Derived on every read, never stored.",
+            "readOnly": true,
+            "title": "Days Remaining"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "organisation": {
+            "$ref": "#/components/schemas/OrganisationSummary"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Deadline"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "category",
+          "emirate",
+          "city",
+          "budget_min",
+          "budget_max",
+          "currency",
+          "submission_deadline",
+          "cover_image_url",
+          "application_count",
+          "tags",
+          "organisation",
+          "category_label",
+          "days_remaining"
+        ],
+        "title": "ListingCard",
+        "type": "object"
+      },
+      "ListingCreate": {
+        "description": "A new listing. Always created as a draft \u2014 `status` and `published_at` are set by the\npublish transition, never by the client.",
+        "properties": {
+          "bid_bond_percentage": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Bond Percentage"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "category": {
+            "$ref": "#/components/schemas/TenderCategory"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contract_duration_months": {
+            "anyOf": [
+              {
+                "maximum": 600.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Duration Months"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "currency": {
+            "default": "AED",
+            "maxLength": 3,
+            "minLength": 3,
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Free-text refinement under the controlled category, e.g. \"district cooling\".",
+            "title": "Industry"
+          },
+          "min_years_experience": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Years Experience"
+          },
+          "questions_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions Deadline"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The buyer's own tender reference. Unique within their organisation.",
+            "title": "Reference"
+          },
+          "required_certifications": {
+            "items": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Required Certifications",
+            "type": "array"
+          },
+          "requires_bid_bond": {
+            "default": false,
+            "title": "Requires Bid Bond",
+            "type": "boolean"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required before the listing can be published; optional on a draft.",
+            "title": "Submission Deadline"
+          },
+          "summary": {
+            "description": "One-paragraph pitch for the catalogue card. Separate from `description` so a card never truncates arbitrary prose mid-sentence.",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "description",
+          "category",
+          "emirate"
+        ],
+        "title": "ListingCreate",
+        "type": "object"
+      },
+      "ListingDetail": {
+        "description": "The full public brief: everything on the card plus the terms and the checklist.",
+        "properties": {
+          "application_count": {
+            "description": "Applications received so far. A denormalised counter, not a live count.",
+            "title": "Application Count",
+            "type": "integer"
+          },
+          "bid_bond_percentage": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Bond Percentage"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "category": {
+            "$ref": "#/components/schemas/TenderCategory"
+          },
+          "category_label": {
+            "description": "Human-readable form of `category`.",
+            "readOnly": true,
+            "title": "Category Label",
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contract_duration_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Duration Months"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "days_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whole days until the submission deadline. Negative once it has passed, null when the listing has no deadline. Derived on every read, never stored.",
+            "readOnly": true,
+            "title": "Days Remaining"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "document_requirements": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentRequirementRead"
+            },
+            "title": "Document Requirements",
+            "type": "array"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "min_years_experience": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Years Experience"
+          },
+          "organisation": {
+            "$ref": "#/components/schemas/OrganisationSummary"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "questions_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions Deadline"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "required_certifications": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Certifications",
+            "type": "array"
+          },
+          "requires_bid_bond": {
+            "title": "Requires Bid Bond",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ListingStatus"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Deadline"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "category",
+          "emirate",
+          "city",
+          "budget_min",
+          "budget_max",
+          "currency",
+          "submission_deadline",
+          "cover_image_url",
+          "application_count",
+          "tags",
+          "organisation",
+          "description",
+          "reference",
+          "industry",
+          "questions_deadline",
+          "contract_duration_months",
+          "min_years_experience",
+          "required_certifications",
+          "requires_bid_bond",
+          "bid_bond_percentage",
+          "published_at",
+          "status",
+          "document_requirements",
+          "category_label",
+          "days_remaining"
+        ],
+        "title": "ListingDetail",
+        "type": "object"
+      },
+      "ListingSort": {
+        "description": "Ordering options offered by `GET /public/listings` (`docs/09` \u00a73.1).\n\nNot a `VocabularyEnum`: nothing persists a sort key, so there is no check constraint to\nkeep in step. It lives beside the query that implements it so adding a member without\nadding an `ORDER BY` is impossible to miss.",
+        "enum": [
+          "deadline",
+          "newest",
+          "budget_high",
+          "budget_low"
+        ],
+        "title": "ListingSort",
+        "type": "string"
+      },
+      "ListingStatus": {
+        "description": "Lifecycle of a published tender listing.\n\n`CLOSED` and `AWARDED` are distinct because they answer different questions: closed means\nthe window ended, awarded means a winner exists. A listing can be closed for weeks before\nan award is recorded, and the public list needs to say which is true.",
+        "enum": [
+          "draft",
+          "published",
+          "closed",
+          "awarded",
+          "cancelled"
+        ],
+        "title": "ListingStatus",
+        "type": "string"
+      },
+      "ListingUpdate": {
+        "additionalProperties": false,
+        "description": "Partial update. Omitted fields are left untouched.\n\n`status` is absent: the lifecycle moves through `/publish` and `/close`, which can enforce\ntheir preconditions. A PATCHable status would let a listing be published without a\ndeadline or reopened after applicants had been told it closed.",
+        "properties": {
+          "bid_bond_percentage": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Bond Percentage"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "maximum": 99999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenderCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contract_duration_months": {
+            "anyOf": [
+              {
+                "maximum": 600.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Duration Months"
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "maxLength": 3,
+                "minLength": 3,
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "emirate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Emirate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "min_years_experience": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Years Experience"
+          },
+          "questions_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions Deadline"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "required_certifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Certifications"
+          },
+          "requires_bid_bond": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Bid Bond"
+          },
+          "submission_deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Deadline"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "ListingUpdate",
         "type": "object"
       },
       "LivenessResponse": {
@@ -1839,6 +3789,763 @@
         "title": "LogoutResponse",
         "type": "object"
       },
+      "NotificationCounts": {
+        "description": "The header badge: how many are waiting, out of how many exist.",
+        "properties": {
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "unread": {
+            "minimum": 0.0,
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unread",
+          "total"
+        ],
+        "title": "NotificationCounts",
+        "type": "object"
+      },
+      "NotificationRead": {
+        "properties": {
+          "application_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_read": {
+            "description": "Whether the recipient has opened this notification.",
+            "readOnly": true,
+            "title": "Is Read",
+            "type": "boolean"
+          },
+          "listing_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deep-link target. Null once the listing is gone \u2014 the notification loses its link rather than vanishing from the recipient's history.",
+            "title": "Listing Id"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "screening_score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Denormalised score. Null for types that carry none.",
+            "title": "Screening Score"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NotificationType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "listing_id",
+          "application_id",
+          "screening_score",
+          "read_at",
+          "created_at",
+          "is_read"
+        ],
+        "title": "NotificationRead",
+        "type": "object"
+      },
+      "NotificationType": {
+        "description": "What a notification is telling its recipient about.",
+        "enum": [
+          "application_received",
+          "screening_completed",
+          "screening_failed",
+          "application_status_changed",
+          "deadline_approaching",
+          "listing_closed"
+        ],
+        "title": "NotificationType",
+        "type": "string"
+      },
+      "OrganisationCreate": {
+        "additionalProperties": false,
+        "description": "The organisation block of a registration request.\n\n`account_type` is absent by design: it is copied from the account being created, and\nletting a client state it in two places invites the two to disagree. `is_verified` is\nabsent for the same reason it is never editable \u2014 an administrator sets it out of band.",
+        "properties": {
+          "address_line": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Line"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contact_email": {
+            "description": "Reachable address for this organisation. Never exposed publicly.",
+            "format": "email",
+            "title": "Contact Email",
+            "type": "string"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "country": {
+            "default": "United Arab Emirates",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Country",
+            "type": "string"
+          },
+          "description": {
+            "description": "What the organisation does, in its own words.",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "employee_count": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Count"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "name": {
+            "description": "Registered or trading name, shown on every listing card.",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Trade licence or commercial registration number. Free text: the format varies by emirate and by authority.",
+            "title": "Registration Number"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "year_established": {
+            "anyOf": [
+              {
+                "maximum": 2200.0,
+                "minimum": 1800.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year Established"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "emirate",
+          "contact_email"
+        ],
+        "title": "OrganisationCreate",
+        "type": "object"
+      },
+      "OrganisationRead": {
+        "description": "The owner's own view, contact block included.\n\nNever embed this in a response addressed to anybody but the owner; use\n`OrganisationSummary` there. `owner_user_id` is omitted entirely \u2014 the owner already knows\nwho they are, and nobody else may learn it.",
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "Copied from the owning account at registration and never updated."
+          },
+          "address_line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Line"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contact_email": {
+            "title": "Contact Email",
+            "type": "string"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "employee_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Count"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "is_verified": {
+            "title": "Is Verified",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "year_established": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year Established"
+          }
+        },
+        "required": [
+          "id",
+          "account_type",
+          "name",
+          "description",
+          "industry",
+          "registration_number",
+          "emirate",
+          "city",
+          "address_line",
+          "country",
+          "contact_email",
+          "contact_phone",
+          "website",
+          "year_established",
+          "employee_count",
+          "is_verified",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrganisationRead",
+        "type": "object"
+      },
+      "OrganisationSummary": {
+        "description": "The small public shape shown on a listing card or an applicant row.\n\nContact details and `owner_user_id` are absent by construction. This is the *only*\norganisation schema that may appear in an unauthenticated response or in a response\naddressed to the other side of the marketplace.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "emirate": {
+            "$ref": "#/components/schemas/Emirate"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "is_verified": {
+            "description": "Checked by an administrator out of band. A badge only \u2014 verification never affects a screening score.",
+            "title": "Is Verified",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "name",
+          "emirate",
+          "city",
+          "industry",
+          "is_verified",
+          "website"
+        ],
+        "title": "OrganisationSummary",
+        "type": "object"
+      },
+      "OrganisationUpdate": {
+        "additionalProperties": false,
+        "description": "Partial update. Omitted fields are left untouched.\n\n`PATCH` semantics mean \"unset\" and \"absent\" must be distinguishable, which is why the\nservice applies only the keys present in `model_fields_set`.",
+        "properties": {
+          "address_line": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Line"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "emirate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Emirate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "employee_count": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Count"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "year_established": {
+            "anyOf": [
+              {
+                "maximum": 2200.0,
+                "minimum": 1800.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year Established"
+          }
+        },
+        "title": "OrganisationUpdate",
+        "type": "object"
+      },
+      "Page_ApplicantRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicantRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ApplicantRead]",
+        "type": "object"
+      },
+      "Page_ApplicationSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ApplicationSummary]",
+        "type": "object"
+      },
+      "Page_CategoryCount_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryCount"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[CategoryCount]",
+        "type": "object"
+      },
       "Page_EvidenceRead_": {
         "properties": {
           "items": {
@@ -1869,6 +4576,102 @@
           "offset"
         ],
         "title": "Page[EvidenceRead]",
+        "type": "object"
+      },
+      "Page_ListingCard_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListingCard"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ListingCard]",
+        "type": "object"
+      },
+      "Page_ListingDetail_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListingDetail"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ListingDetail]",
+        "type": "object"
+      },
+      "Page_NotificationRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total rows matching the filters, ignoring limit/offset.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[NotificationRead]",
         "type": "object"
       },
       "Page_ProjectRead_": {
@@ -1965,6 +4768,108 @@
           "offset"
         ],
         "title": "Page[TenderRead]",
+        "type": "object"
+      },
+      "PasswordResetAccepted": {
+        "description": "Acknowledgement for `POST /auth/password-reset/request`.\n\nDeclared here rather than in `app/schemas/auth.py` because it carries no data: it exists so\nthe 202 has a documented body instead of an untyped null, and its only field is a constant.",
+        "properties": {
+          "detail": {
+            "default": "If that address has an account, a reset link is on its way. The link expires shortly, and requesting a new one invalidates the old.",
+            "description": "Fixed text. Identical whether or not the address is registered.",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "title": "PasswordResetAccepted",
+        "type": "object"
+      },
+      "PasswordResetConfirm": {
+        "description": "`POST /auth/password-reset/confirm`. Single-use; consuming the token revokes every\nrefresh session for that account.",
+        "properties": {
+          "new_password": {
+            "examples": [
+              "a-long-passphrase-1"
+            ],
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "New Password",
+            "type": "string"
+          },
+          "token": {
+            "description": "The opaque token from the reset link.",
+            "maxLength": 512,
+            "minLength": 16,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "PasswordResetConfirm",
+        "type": "object"
+      },
+      "PasswordResetRequest": {
+        "description": "`POST /auth/password-reset/request`.\n\nAlways answered with 202 whether or not the address is registered: a differing response\nwould be an account-enumeration oracle.",
+        "properties": {
+          "email": {
+            "examples": [
+              "coordinator@fm-demo.ae"
+            ],
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "PasswordResetRequest",
+        "type": "object"
+      },
+      "PortalStats": {
+        "description": "Hero counters for the landing page. Published listings only.",
+        "properties": {
+          "active_categories": {
+            "description": "Distinct categories with at least one published listing.",
+            "minimum": 0.0,
+            "title": "Active Categories",
+            "type": "integer"
+          },
+          "buying_organisations": {
+            "description": "Distinct organisations with at least one published listing.",
+            "minimum": 0.0,
+            "title": "Buying Organisations",
+            "type": "integer"
+          },
+          "currency": {
+            "default": "AED",
+            "description": "Currency `total_published_value` is expressed in.",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "type": "string"
+          },
+          "published_listings": {
+            "minimum": 0.0,
+            "title": "Published Listings",
+            "type": "integer"
+          },
+          "total_published_value": {
+            "description": "Sum of the disclosed maximum budget across published listings. Listings that do not disclose a budget contribute nothing rather than an estimate.",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Published Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "published_listings",
+          "buying_organisations",
+          "total_published_value",
+          "active_categories"
+        ],
+        "title": "PortalStats",
         "type": "object"
       },
       "ProblemDetail": {
@@ -2633,6 +5538,10 @@
       },
       "RegisterRequest": {
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "Which side of the marketplace this account is on. Fixed at registration and never changed: an account's listings and applications would be meaningless if its side could flip underneath them."
+          },
           "display_name": {
             "examples": [
               "Tender Coordinator"
@@ -2650,6 +5559,10 @@
             "title": "Email",
             "type": "string"
           },
+          "organisation": {
+            "$ref": "#/components/schemas/OrganisationCreate",
+            "description": "Required. The account and its organisation are created in one transaction, so a user can never exist without the identity every listing card and applicant row has to render."
+          },
           "password": {
             "examples": [
               "a-long-passphrase-1"
@@ -2663,10 +5576,43 @@
         "required": [
           "email",
           "password",
-          "display_name"
+          "display_name",
+          "account_type",
+          "organisation"
         ],
         "title": "RegisterRequest",
         "type": "object"
+      },
+      "RequiredDocumentType": {
+        "description": "The checklist a buyer builds a listing's document requirements from.\n\nA controlled list \u2014 not free text \u2014 because screening matches an uploaded file against\nthese keys. A buyer inventing \"Trade Licence (copy)\" would produce a requirement no\nclassifier can ever satisfy, and every vendor would score as missing it.",
+        "enum": [
+          "trade_licence",
+          "commercial_registration",
+          "vat_tax_certificate",
+          "establishment_card",
+          "authorised_signatory",
+          "company_profile",
+          "audited_financials",
+          "bank_reference_letter",
+          "bid_bond",
+          "performance_guarantee",
+          "insurance_certificate",
+          "iso_certification",
+          "hse_plan",
+          "quality_plan",
+          "technical_proposal",
+          "commercial_proposal",
+          "method_statement",
+          "project_schedule",
+          "staff_cvs",
+          "organisation_chart",
+          "equipment_list",
+          "past_project_references",
+          "client_testimonial",
+          "other"
+        ],
+        "title": "RequiredDocumentType",
+        "type": "string"
       },
       "RequirementCategory": {
         "description": "Requirement taxonomy (`docs/01_PRODUCT_REQUIREMENTS.md` \u00a75).",
@@ -2689,6 +5635,15 @@
         ],
         "title": "RequirementCategory",
         "type": "string"
+      },
+      "RequirementChecklistWrite": {
+        "description": "`PUT /listings/{id}/requirements` \u2014 the whole checklist, replaced wholesale.\n\nA bare array rather than an object because the list *is* the checklist: partial edits\nwould need per-row identity, and replacing the set outright is both simpler to reason\nabout and the only way to express \"this requirement is gone\".",
+        "items": {
+          "$ref": "#/components/schemas/DocumentRequirementWrite"
+        },
+        "maxItems": 24,
+        "title": "RequirementChecklistWrite",
+        "type": "array"
       },
       "RequirementObligation": {
         "enum": [
@@ -2978,6 +5933,370 @@
         "title": "RiskType",
         "type": "string"
       },
+      "ScreeningRead": {
+        "description": "The vendor's full screening result, polled while `pending` or `processing`.\n\nThere is no progress percentage: the status is the real pipeline state, and a fabricated\nnumber would be a lie the vendor cannot check (`CLAUDE.md`).",
+        "properties": {
+          "application_id": {
+            "format": "uuid",
+            "title": "Application Id",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "documents_processed": {
+            "title": "Documents Processed",
+            "type": "integer"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisErrorCode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Safe, machine-readable failure reason. Detail stays in the logs."
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingRead"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "has_blocking_gap": {
+            "title": "Has Blocking Gap",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mandatory_met": {
+            "title": "Mandatory Met",
+            "type": "integer"
+          },
+          "mandatory_total": {
+            "title": "Mandatory Total",
+            "type": "integer"
+          },
+          "optional_met": {
+            "title": "Optional Met",
+            "type": "integer"
+          },
+          "optional_total": {
+            "title": "Optional Total",
+            "type": "integer"
+          },
+          "overall_score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "0-100, computed in Python from the findings below. Null until the run completes \u2014 a partial score would read as a real result.",
+            "title": "Overall Score"
+          },
+          "pages_extracted": {
+            "title": "Pages Extracted",
+            "type": "integer"
+          },
+          "pages_needing_ocr": {
+            "description": "Pages with no readable text layer that OCR could not recover. Reported as \"could not be read\", never as a missing document.",
+            "title": "Pages Needing Ocr",
+            "type": "integer"
+          },
+          "scoring_version": {
+            "description": "Which scoring rules produced this result, for reproducibility.",
+            "title": "Scoring Version",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScreeningStatus"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Advisory narrative generated from the validated findings, never from raw document text.",
+            "title": "Summary"
+          }
+        },
+        "required": [
+          "id",
+          "application_id",
+          "status",
+          "overall_score",
+          "mandatory_met",
+          "mandatory_total",
+          "optional_met",
+          "optional_total",
+          "documents_processed",
+          "pages_extracted",
+          "pages_needing_ocr",
+          "summary",
+          "scoring_version",
+          "has_blocking_gap",
+          "error_code",
+          "started_at",
+          "completed_at",
+          "findings"
+        ],
+        "title": "ScreeningRead",
+        "type": "object"
+      },
+      "ScreeningStatus": {
+        "description": "Where a submission sits in the document-screening pipeline.\n\nMirrors `AnalysisStatus` rather than reusing it: the two pipelines fail for different\nreasons and are polled by different dashboards, and a shared vocabulary would force one\nto carry states the other can never enter.",
+        "enum": [
+          "pending",
+          "processing",
+          "completed",
+          "failed"
+        ],
+        "title": "ScreeningStatus",
+        "type": "string"
+      },
+      "ScreeningSummary": {
+        "description": "The compact form embedded in an applicant row or a vendor's application.\n\nEnough to rank and to spot a blocking gap; the findings themselves come from\n`GET /applications/{id}/screening`.",
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "has_blocking_gap": {
+            "description": "True when a mandatory requirement is unmet. The score is still shown: a buyer is entitled to see that an otherwise strong bid is missing one certificate.",
+            "title": "Has Blocking Gap",
+            "type": "boolean"
+          },
+          "mandatory_met": {
+            "title": "Mandatory Met",
+            "type": "integer"
+          },
+          "mandatory_total": {
+            "title": "Mandatory Total",
+            "type": "integer"
+          },
+          "overall_score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the run completes. Computed in Python.",
+            "title": "Overall Score"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScreeningStatus"
+          }
+        },
+        "required": [
+          "status",
+          "overall_score",
+          "mandatory_met",
+          "mandatory_total",
+          "has_blocking_gap",
+          "completed_at"
+        ],
+        "title": "ScreeningSummary",
+        "type": "object"
+      },
+      "SearchInterpretation": {
+        "additionalProperties": false,
+        "description": "What the query was understood to mean.\n\n`extra=\"forbid\"` because this doubles as the structured output contract the provider must\nreturn: an unknown key is a malformed completion, not something to guess at. Every field\nis optional \u2014 a query that says nothing about budget must not cause the model to invent\none.",
+        "properties": {
+          "budget_max": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/TenderCategory"
+            },
+            "maxItems": 30,
+            "title": "Categories",
+            "type": "array"
+          },
+          "emirates": {
+            "items": {
+              "$ref": "#/components/schemas/Emirate"
+            },
+            "maxItems": 7,
+            "title": "Emirates",
+            "type": "array"
+          },
+          "keywords": {
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Keywords",
+            "type": "array"
+          }
+        },
+        "title": "SearchInterpretation",
+        "type": "object"
+      },
+      "SearchMatch": {
+        "description": "One ranked listing, with the reasons Python scored it where it did.",
+        "properties": {
+          "listing": {
+            "$ref": "#/components/schemas/ListingCard"
+          },
+          "reasons": {
+            "description": "Why this listing matched, e.g. \"category: Facilities Management\".",
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Reasons",
+            "type": "array"
+          },
+          "score": {
+            "description": "Deterministic relevance score computed in Python from the interpretation. Comparable within one response only.",
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "listing",
+          "score"
+        ],
+        "title": "SearchMatch",
+        "type": "object"
+      },
+      "SearchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Maximum matches to return. Omit to use the server's configured maximum; a larger value is clamped to it.",
+            "title": "Limit"
+          },
+          "query": {
+            "description": "Plain language, e.g. \"we do MEP fit-out in Sharjah, about 30 staff\". Treated as untrusted evidence, never as instructions.",
+            "examples": [
+              "we do MEP fit-out in Sharjah, about 30 staff"
+            ],
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest",
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "degraded": {
+            "description": "True when no language model ran and the interpretation came from plain text processing. Search still works; it is simply less clever, and the UI says so rather than pretending a model answered.",
+            "title": "Degraded",
+            "type": "boolean"
+          },
+          "interpretation": {
+            "$ref": "#/components/schemas/SearchInterpretation",
+            "description": "What the query was understood to mean, so the user can correct it."
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/SearchMatch"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "interpretation",
+          "matches",
+          "degraded"
+        ],
+        "title": "SearchResponse",
+        "type": "object"
+      },
       "SessionRead": {
         "description": "A live refresh session, so a user can see where they are signed in.",
         "properties": {
@@ -3016,6 +6335,43 @@
         ],
         "title": "SessionRead",
         "type": "object"
+      },
+      "TenderCategory": {
+        "description": "Procurement categories a listing can be filed under.\n\nDeliberately broad and flat rather than a nested taxonomy: a single-select category that a\nbuyer picks correctly is worth more than a hierarchy they pick wrongly. Sector nuance lives\nin the free-text `industry` and the tag array, both of which are searchable.",
+        "enum": [
+          "construction_civil_works",
+          "roads_infrastructure",
+          "water_wastewater",
+          "electrical_power",
+          "oil_gas_petrochemical",
+          "renewable_energy",
+          "facilities_management",
+          "cleaning_waste_management",
+          "landscaping_irrigation",
+          "it_software",
+          "cybersecurity",
+          "cloud_data_centre",
+          "telecommunications",
+          "ai_data_analytics",
+          "healthcare_medical",
+          "education_training",
+          "transport_logistics",
+          "fleet_vehicles",
+          "security_services",
+          "catering_hospitality",
+          "printing_media",
+          "marketing_events",
+          "consulting_advisory",
+          "legal_services",
+          "financial_audit",
+          "hr_recruitment",
+          "furniture_fitout",
+          "laboratory_scientific",
+          "defence_aerospace",
+          "environmental_services"
+        ],
+        "title": "TenderCategory",
+        "type": "string"
       },
       "TenderCreate": {
         "properties": {
@@ -3323,6 +6679,9 @@
       },
       "UserRead": {
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -3345,6 +6704,16 @@
           "is_active": {
             "title": "Is Active",
             "type": "boolean"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -3352,6 +6721,7 @@
           "email",
           "display_name",
           "is_active",
+          "account_type",
           "created_at"
         ],
         "title": "UserRead",
@@ -3395,6 +6765,113 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VendorStats": {
+        "description": "`GET /applications/stats` \u2014 the vendor dashboard's counters (`docs/09` \u00a76).\n\nApplications missing a figure are excluded from that figure's aggregate and counted in\n`incomplete_financials`, so a partly-filled dashboard is visibly partial rather than\nquietly wrong.",
+        "properties": {
+          "approved": {
+            "minimum": 0.0,
+            "title": "Approved",
+            "type": "integer"
+          },
+          "draft": {
+            "minimum": 0.0,
+            "title": "Draft",
+            "type": "integer"
+          },
+          "incomplete_financials": {
+            "description": "Approved applications missing a bid amount or an estimated cost, and so excluded from the money figures above.",
+            "minimum": 0.0,
+            "title": "Incomplete Financials",
+            "type": "integer"
+          },
+          "margin_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`total_margin / total_bid_value` as a fraction \u2014 0.18 means 18%. Null when the denominator is zero.",
+            "title": "Margin Percentage"
+          },
+          "rejected": {
+            "minimum": 0.0,
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "shortlisted": {
+            "minimum": 0.0,
+            "title": "Shortlisted",
+            "type": "integer"
+          },
+          "submitted": {
+            "minimum": 0.0,
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "total_bid_value": {
+            "description": "Sum of `bid_amount` over approved applications.",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Bid Value",
+            "type": "string"
+          },
+          "total_margin": {
+            "description": "Sum of `bid_amount - estimated_cost` over approved applications where both figures are present. Can be negative.",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Margin",
+            "type": "string"
+          },
+          "under_review": {
+            "minimum": 0.0,
+            "title": "Under Review",
+            "type": "integer"
+          },
+          "waiting": {
+            "description": "Applications still awaiting a buyer decision: submitted, under review, or shortlisted.",
+            "minimum": 0.0,
+            "title": "Waiting",
+            "type": "integer"
+          },
+          "win_rate": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "approved / (approved + rejected), as a fraction. Null when nothing has been decided yet \u2014 a rate over no decisions is not zero, it is unknown.",
+            "title": "Win Rate"
+          },
+          "withdrawn": {
+            "minimum": 0.0,
+            "title": "Withdrawn",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "draft",
+          "submitted",
+          "under_review",
+          "shortlisted",
+          "approved",
+          "rejected",
+          "withdrawn",
+          "waiting",
+          "total_bid_value",
+          "total_margin",
+          "margin_percentage",
+          "win_rate",
+          "incomplete_financials"
+        ],
+        "title": "VendorStats",
         "type": "object"
       },
       "VerificationStatus": {
@@ -4028,6 +7505,1070 @@
         ]
       }
     },
+    "/api/v1/applications": {
+      "get": {
+        "description": "Every status including your own drafts, newest first. Filter with `status`.",
+        "operationId": "list_applications_api_v1_applications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ApplicationStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "description": "Rows per page.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Rows to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Rows to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ApplicationSummary_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List your own applications",
+        "tags": [
+          "applications"
+        ]
+      },
+      "post": {
+        "description": "Created against a published listing that is still accepting bids; anything else is a 404 for an unpublished listing or a 409 for a closed one. One application per vendor per listing \u2014 a second attempt returns 409 naming the existing one.",
+        "operationId": "create_application_api_v1_applications_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start a draft application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/stats": {
+      "get": {
+        "description": "Counts by status, a `waiting` roll-up of everything still awaiting a decision, and the money. Applications missing a figure are excluded from that figure and counted in `incomplete_financials`, so a partly-filled dashboard is visibly partial rather than quietly wrong. `margin_percentage` and `win_rate` are null \u2014 never zero \u2014 when their denominator is zero: a win rate over no decisions is unknown, not nil.",
+        "operationId": "get_application_stats_api_v1_applications_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Vendor dashboard aggregates",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}": {
+      "get": {
+        "operationId": "get_application_api_v1_applications__application_id__get",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one of your applications",
+        "tags": [
+          "applications"
+        ]
+      },
+      "patch": {
+        "description": "Drafts only. Once submitted the bid is what the buyer is reading, and editing it would make their applicant list a description of something that no longer exists.",
+        "operationId": "update_application_api_v1_applications__application_id__patch",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit a draft application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/decision": {
+      "patch": {
+        "description": "The vendor is notified, and your note is shown to them verbatim. A withdrawn application is no longer yours to judge, and an approval or rejection is not overwritten once the vendor has been told \u2014 both return 409.",
+        "operationId": "decide_application_api_v1_applications__application_id__decision_patch",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicantRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shortlist, approve, or reject an applicant",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/documents": {
+      "post": {
+        "description": "Multipart, one file per call, drafts only. The file must be a PDF by content (magic bytes), not just by name; size and page count are bounded; an identical file (SHA-256) already on this application returns 409. Storage paths are generated server-side \u2014 the client filename is display-only. `declared_document_type` is the vendor's own label and is a hint for screening, never a verdict: the pipeline still decides what the file actually is from its text.",
+        "operationId": "upload_application_document_api_v1_applications__application_id__documents_post",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_application_document_api_v1_applications__application_id__documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDocumentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Attach a PDF to a draft application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/documents/{document_id}": {
+      "delete": {
+        "operationId": "delete_application_document_api_v1_applications__application_id__documents__document_id__delete",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Application document identifier.",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "description": "Application document identifier.",
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove a document from a draft application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/review": {
+      "post": {
+        "description": "Records that you have opened this application and moves it from `submitted` to `under_review`, which is what lets a vendor tell 'waiting for an answer' from 'nobody has looked yet'. The first-viewed timestamp is written once and never overwritten. No notification is sent: being read is not a decision, and a message for it would train vendors to ignore the ones that are.",
+        "operationId": "review_applicant_api_v1_applications__application_id__review_post",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicantRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark an applicant as under review",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/screening": {
+      "get": {
+        "description": "Poll this while the status is `pending` or `processing`. There is no progress percentage: the status is the real pipeline stage, and a number nobody can check would be a fabrication. `overall_score` is computed in Python from the findings and is null until the run completes. Pages with no readable text that OCR could not recover are counted in `pages_needing_ocr` and reported as unreadable \u2014 never folded into `missing`, because the two need different things from you. 404 until the application has been submitted.",
+        "operationId": "get_application_screening_api_v1_applications__application_id__screening_get",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreeningRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get the screening result for your application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/submit": {
+      "post": {
+        "description": "202 because a screening job is queued; poll `/applications/{id}/screening` for the real stage. At least one document is required \u2014 screening has nothing to assess otherwise \u2014 and the listing must still be open. Pressing submit twice changes nothing: the buyer is not told twice and the pipeline does not run twice. A screening that failed on our side can be re-run by submitting again, and that path is allowed even after the deadline, because re-running our own failure does not change the bid.",
+        "operationId": "submit_application_api_v1_applications__application_id__submit_post",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit the application and queue its screening",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
+    "/api/v1/applications/{application_id}/withdraw": {
+      "post": {
+        "description": "Idempotent. Refused for a draft, which was never sent, and after a decision, which is a matter of record. Withdrawing is final: the same listing cannot be applied to again.",
+        "operationId": "withdraw_application_api_v1_applications__application_id__withdraw_post",
+        "parameters": [
+          {
+            "description": "Application identifier.",
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "description": "Application identifier.",
+              "format": "uuid",
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Withdraw a submitted application",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "description": "Returns a short-lived access token and sets an HttpOnly refresh cookie. A failed attempt always returns the same message, whether or not the account exists.",
@@ -4160,6 +8701,7 @@
     },
     "/api/v1/auth/me": {
       "get": {
+        "description": "Includes `account_type` \u2014 which side of the marketplace this account is on, fixed at registration \u2014 and a summary of its organisation. The summary carries no contact block: it is the same shape a listing card shows to the public.",
         "operationId": "me_api_v1_auth_me_get",
         "responses": {
           "200": {
@@ -4199,6 +8741,103 @@
           }
         ],
         "summary": "The signed-in user",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/password-reset/confirm": {
+      "post": {
+        "description": "Single use. Unknown, already spent, expired, and belonging to a disabled account all return the same 401, so a caller holding a guessed token learns nothing about which part of the guess was wrong. Success revokes every refresh session for the account \u2014 resetting a password is exactly when a user wants sessions they do not control dropped \u2014 so this does not sign anyone in and the refresh cookie is cleared.",
+        "operationId": "confirm_password_reset_api_v1_auth_password_reset_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set a new password with a reset token",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/password-reset/request": {
+      "post": {
+        "description": "Always 202 with the same body, whether or not the address has an account: a response that differed would let anyone test which addresses are registered. Rate limited per address and caller. Issuing a link invalidates any earlier unused one.",
+        "operationId": "request_password_reset_api_v1_auth_password_reset_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Request a password reset link",
         "tags": [
           "authentication"
         ]
@@ -4248,6 +8887,7 @@
     },
     "/api/v1/auth/register": {
       "post": {
+        "description": "The account and its organisation are created in one transaction, so a user can never exist without the identity every listing card and applicant row has to render. `account_type` fixes which side of the marketplace this account is on and is never changed afterwards; the organisation inherits it rather than restating it.",
         "operationId": "register_api_v1_auth_register_post",
         "requestBody": {
           "content": {
@@ -4284,11 +8924,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
           },
           "429": {
             "content": {
@@ -5725,6 +10365,1429 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/listings": {
+      "get": {
+        "description": "Every status including drafts, newest first. Filter with `status`.",
+        "operationId": "list_listings_api_v1_listings_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ListingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "description": "Rows per page.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Rows to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Rows to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ListingDetail_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List your own listings",
+        "tags": [
+          "listings"
+        ]
+      },
+      "post": {
+        "description": "Always created as a draft: `status` and `published_at` belong to the publish transition, which can check that the listing is actually biddable. A `reference` already used by another of your listings returns 409.",
+        "operationId": "create_listing_api_v1_listings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create a draft listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}": {
+      "get": {
+        "operationId": "get_listing_api_v1_listings__listing_id__get",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one of your listings",
+        "tags": [
+          "listings"
+        ]
+      },
+      "patch": {
+        "description": "Partial update, allowed while the listing is a draft or published. A closed, awarded, or cancelled listing returns 409: its terms are the ones applicants bid against. A published listing cannot lose its deadline or have it moved into the past \u2014 use `/close` for that, so the applicants are told.",
+        "operationId": "update_listing_api_v1_listings__listing_id__patch",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update a listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/applications": {
+      "get": {
+        "description": "Ranked by screening score, highest first, with unscored submissions last rather than sorted to the top as though an empty score were the best one. Drafts are never returned: an unsent bid is not an applicant. `estimated_cost` and the margin derived from it are vendor-private and absent from this shape by construction.",
+        "operationId": "list_applicants_api_v1_listings__listing_id__applications_get",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ApplicationStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "description": "Rows per page.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Rows to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Rows to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ApplicantRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List the applicants on one of your listings",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/close": {
+      "post": {
+        "description": "Ends the bidding window and notifies every applicant who has not withdrawn. Only a published listing can be closed; one whose deadline has merely passed is still published in the record and this is the normal way to settle it.",
+        "operationId": "close_listing_api_v1_listings__listing_id__close_post",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Close a published listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/publish": {
+      "post": {
+        "description": "Only a draft can be published. Every unmet precondition is reported in one message: a submission deadline in the future, a description to bid against, and at least one mandatory document requirement \u2014 without one, every applicant screens identically and the score ranks nothing.",
+        "operationId": "publish_listing_api_v1_listings__listing_id__publish_post",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Publish a draft listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/requirements": {
+      "put": {
+        "description": "The body is a bare array and replaces the whole checklist \u2014 omitting an entry is how a requirement is removed. Position in the array is the display order. Refused with 409 once any application has been submitted: those bids were screened against the current list, and their stored scores would silently start describing requirements the applicants were never given.",
+        "operationId": "replace_requirements_api_v1_listings__listing_id__requirements_put",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementChecklistWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentRequirementRead"
+                  },
+                  "title": "Response Replace Requirements Api V1 Listings  Listing Id  Requirements Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Replace the document checklist",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "description": "Newest first. Set `unread_only` to show only what is still waiting.",
+        "operationId": "list_notifications_api_v1_notifications_get",
+        "parameters": [
+          {
+            "description": "Return only unread notifications.",
+            "in": "query",
+            "name": "unread_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Return only unread notifications.",
+              "title": "Unread Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "description": "Rows per page.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Rows to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Rows to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_NotificationRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List your notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/counts": {
+      "get": {
+        "description": "Two numbers rather than one so the badge can say '3 of 40' without pulling a page of rows it is not going to render.",
+        "operationId": "get_notification_counts_api_v1_notifications_counts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationCounts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unread and total counts for the header badge",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "description": "Idempotent. Only notifications belonging to the signed-in account are touched.",
+        "operationId": "mark_all_read_api_v1_notifications_read_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark every notification read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "description": "Idempotent: a second call succeeds and keeps the original read timestamp. A notification belonging to another account answers 404, exactly as a missing one does.",
+        "operationId": "mark_notification_read_api_v1_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "description": "Notification identifier.",
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "description": "Notification identifier.",
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark one notification read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/organisation": {
+      "get": {
+        "description": "Registration creates the organisation in the same transaction as the account, so a 404 here means a pre-portal account rather than an ordinary empty state.",
+        "operationId": "get_organisation_api_v1_organisation_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get the signed-in account's organisation",
+        "tags": [
+          "organisations"
+        ]
+      },
+      "patch": {
+        "description": "Partial update; omitted fields are left unchanged. `account_type` and `is_verified` are not editable \u2014 the first is fixed at registration and the second is set by an administrator out of band.",
+        "operationId": "update_organisation_api_v1_organisation_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganisationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update the signed-in account's organisation",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/public/categories": {
+      "get": {
+        "description": "Every category, busiest first. Categories with no published listings are still returned so the landing page can render the whole taxonomy without it flickering as listings close. The full set always fits in one page; there is nothing to page through.",
+        "operationId": "list_categories_api_v1_public_categories_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CategoryCount_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The category taxonomy with live listing counts",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/listings": {
+      "get": {
+        "description": "Published listings only \u2014 drafts, cancelled, and closed tenders are never returned. All filters combine with AND. A budget filter is a range *overlap*: a listing quoting 1M-3M matches a search for anything above 2M. Listings that disclose no budget are excluded from a budget-filtered search rather than presented as possible matches.",
+        "operationId": "list_public_listings_api_v1_public_listings_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TenderCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "emirate",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Emirate"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Emirate"
+            }
+          },
+          {
+            "description": "Free text.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Free text.",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "budget_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 99999999999.99,
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "budget_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 99999999999.99,
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "closing_within_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 365,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Closing Within Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ListingSort",
+              "default": "deadline"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "description": "Rows per page.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Rows to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Rows to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ListingCard_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse the published tender catalogue",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/listings/{listing_id}": {
+      "get": {
+        "description": "The full brief, the buyer's organisation, and the document checklist an applicant will be screened against. Anything not published is 404 \u2014 a visitor learns nothing about a buyer's drafts.",
+        "operationId": "get_public_listing_api_v1_public_listings__listing_id__get",
+        "parameters": [
+          {
+            "description": "Listing identifier.",
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "description": "Listing identifier.",
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get one published listing",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/search": {
+      "post": {
+        "description": "The query is untrusted evidence, never an instruction: it is passed to the model as user content between delimiters and never interpolated into a system prompt. The model returns only a structured interpretation \u2014 it never sees the listing set and never orders results, so it cannot invent a listing. Ranking is deterministic Python over that interpretation, which is echoed back so the user can correct it. With no model configured the interpretation is derived from plain text processing and `degraded` is true; search never pretends a model ran.",
+        "operationId": "search_listings_api_v1_public_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Match listings to a plain-language description",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/stats": {
+      "get": {
+        "description": "Published listings only. `total_published_value` sums the disclosed budgets; a listing that names no budget contributes nothing rather than an estimate.",
+        "operationId": "get_portal_stats_api_v1_public_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Landing-page counters",
+        "tags": [
+          "public"
         ]
       }
     },

@@ -8,10 +8,22 @@ from pydantic import ValidationError
 from app.core.constants import MAX_PASSWORD_LENGTH
 from app.schemas.auth import PASSWORD_MIN_LENGTH, LoginRequest, RegisterRequest
 
+#: The organisation block registration now requires. Only the four fields with no default are
+#: spelled out — a fixture that fills in the optional ones would stop these tests noticing if
+#: one of them quietly became mandatory.
+VALID_ORGANISATION = {
+    "name": "Falcon Facilities Management",
+    "description": "Hard and soft FM across the northern emirates.",
+    "emirate": "sharjah",
+    "contact_email": "ops@fm-demo.ae",
+}
+
 VALID = {
     "email": "coordinator@fm-demo.ae",
     "password": "a-long-demo-passphrase-1",
     "display_name": "Tender Coordinator",
+    "account_type": "vendor",
+    "organisation": VALID_ORGANISATION,
 }
 
 
@@ -97,3 +109,51 @@ def test_login_does_not_apply_the_password_policy() -> None:
 def test_login_still_rejects_an_empty_password() -> None:
     with pytest.raises(ValidationError):
         LoginRequest(email="coordinator@fm-demo.ae", password="")
+
+
+# --- Account type and organisation (portal registration) ---------------------------------
+
+
+def test_account_type_is_required() -> None:
+    """There is no default side of the marketplace.
+
+    Defaulting would silently make every ambiguous signup a vendor, and the choice is
+    irreversible once listings or applications exist.
+    """
+    payload = {k: v for k, v in VALID.items() if k != "account_type"}
+    with pytest.raises(ValidationError):
+        RegisterRequest(**payload)  # type: ignore[arg-type]
+
+
+def test_unknown_account_type_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        register(account_type="regulator")
+
+
+@pytest.mark.parametrize("account_type", ["company", "vendor"])
+def test_both_sides_register(account_type: str) -> None:
+    assert register(account_type=account_type).account_type == account_type
+
+
+def test_organisation_is_required() -> None:
+    payload = {k: v for k, v in VALID.items() if k != "organisation"}
+    with pytest.raises(ValidationError):
+        RegisterRequest(**payload)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("field", ["name", "description", "emirate", "contact_email"])
+def test_organisation_required_fields(field: str) -> None:
+    organisation = {k: v for k, v in VALID_ORGANISATION.items() if k != field}
+    with pytest.raises(ValidationError):
+        register(organisation=organisation)
+
+
+def test_organisation_emirate_is_a_controlled_value() -> None:
+    with pytest.raises(ValidationError):
+        register(organisation={**VALID_ORGANISATION, "emirate": "doha"})
+
+
+def test_organisation_account_type_cannot_be_supplied() -> None:
+    """The side is stated once, on the account. A second copy could contradict the first."""
+    with pytest.raises(ValidationError):
+        register(organisation={**VALID_ORGANISATION, "account_type": "company"})

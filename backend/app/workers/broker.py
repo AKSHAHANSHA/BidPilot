@@ -1,7 +1,7 @@
-"""Dramatiq broker and the analysis actor.
+"""Dramatiq broker and the worker actors.
 
-Dramatiq over Celery (`docs/08` D1): Redis-native, minimal configuration. The actor is a thin
-synchronous wrapper that opens its own session and drives the async pipeline via
+Dramatiq over Celery (`docs/08` D1): Redis-native, minimal configuration. Each actor is a thin
+synchronous wrapper that opens its own session and drives an async pipeline via
 `asyncio.run(...)` — the worker never shares the API's engine or event loop (D2).
 
 Importing this module configures the global broker, so it is imported only by the worker entry
@@ -41,6 +41,26 @@ def run_analysis_actor(analysis_id: str) -> None:
         factory = get_sessionmaker()
         async with factory() as session:
             await run_analysis(session, analysis_id, provider=provider)
+        await dispose_engine()
+
+    asyncio.run(_run())
+
+
+@dramatiq.actor(max_retries=3, min_backoff=1000, max_backoff=60000)
+def run_screening_actor(screening_id: str) -> None:
+    """Worker entry point for one application screening (`docs/09` §4).
+
+    No provider is passed: `run_screening` builds one through `app/ai/providers/factory.py`, so
+    a deployment with no OpenAI key still screens — deterministically, and saying so in the logs
+    — instead of failing every submission at the classifier.
+    """
+    from app.core.database import dispose_engine, get_sessionmaker
+    from app.workers.screening_pipeline import run_screening
+
+    async def _run() -> None:
+        factory = get_sessionmaker()
+        async with factory() as session:
+            await run_screening(session, screening_id, settings=_settings)
         await dispose_engine()
 
     asyncio.run(_run())

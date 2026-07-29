@@ -244,3 +244,202 @@ class RevenueRange(VocabularyEnum):
     FROM_5M_TO_20M = "5m_to_20m_aed"
     FROM_20M_TO_50M = "20m_to_50m_aed"
     OVER_50M = "over_50m_aed"
+
+
+# ---------------------------------------------------------------------------
+# Portal vocabularies
+#
+# The vocabularies below serve the two-sided marketplace: buying organisations
+# publish listings, supplying vendors apply to them. They follow the same rule as
+# everything above — the enum is the single source of truth and the migration's
+# CHECK constraint is written from `sql_in_list()`.
+# ---------------------------------------------------------------------------
+
+
+class AccountType(VocabularyEnum):
+    """Which side of the marketplace an account sits on.
+
+    Chosen at registration and immutable afterwards: an account's listings and applications
+    are meaningless if its side can flip underneath them. Changing sides means a new account.
+    """
+
+    #: A buying organisation. Publishes listings and reviews applicants.
+    COMPANY = "company"
+    #: A supplying organisation. Browses listings and applies to them.
+    VENDOR = "vendor"
+
+
+class TenderCategory(VocabularyEnum):
+    """Procurement categories a listing can be filed under.
+
+    Deliberately broad and flat rather than a nested taxonomy: a single-select category that a
+    buyer picks correctly is worth more than a hierarchy they pick wrongly. Sector nuance lives
+    in the free-text `industry` and the tag array, both of which are searchable.
+    """
+
+    CONSTRUCTION_CIVIL_WORKS = "construction_civil_works"
+    ROADS_INFRASTRUCTURE = "roads_infrastructure"
+    WATER_WASTEWATER = "water_wastewater"
+    ELECTRICAL_POWER = "electrical_power"
+    OIL_GAS_PETROCHEMICAL = "oil_gas_petrochemical"
+    RENEWABLE_ENERGY = "renewable_energy"
+    FACILITIES_MANAGEMENT = "facilities_management"
+    CLEANING_WASTE_MANAGEMENT = "cleaning_waste_management"
+    LANDSCAPING_IRRIGATION = "landscaping_irrigation"
+    IT_SOFTWARE = "it_software"
+    CYBERSECURITY = "cybersecurity"
+    CLOUD_DATA_CENTRE = "cloud_data_centre"
+    TELECOMMUNICATIONS = "telecommunications"
+    AI_DATA_ANALYTICS = "ai_data_analytics"
+    HEALTHCARE_MEDICAL = "healthcare_medical"
+    EDUCATION_TRAINING = "education_training"
+    TRANSPORT_LOGISTICS = "transport_logistics"
+    FLEET_VEHICLES = "fleet_vehicles"
+    SECURITY_SERVICES = "security_services"
+    CATERING_HOSPITALITY = "catering_hospitality"
+    PRINTING_MEDIA = "printing_media"
+    MARKETING_EVENTS = "marketing_events"
+    CONSULTING_ADVISORY = "consulting_advisory"
+    LEGAL_SERVICES = "legal_services"
+    FINANCIAL_AUDIT = "financial_audit"
+    HR_RECRUITMENT = "hr_recruitment"
+    FURNITURE_FITOUT = "furniture_fitout"
+    LABORATORY_SCIENTIFIC = "laboratory_scientific"
+    DEFENCE_AEROSPACE = "defence_aerospace"
+    ENVIRONMENTAL_SERVICES = "environmental_services"
+
+
+class ListingStatus(VocabularyEnum):
+    """Lifecycle of a published tender listing.
+
+    `CLOSED` and `AWARDED` are distinct because they answer different questions: closed means
+    the window ended, awarded means a winner exists. A listing can be closed for weeks before
+    an award is recorded, and the public list needs to say which is true.
+    """
+
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    CLOSED = "closed"
+    AWARDED = "awarded"
+    CANCELLED = "cancelled"
+
+
+class ApplicationStatus(VocabularyEnum):
+    """Lifecycle of a vendor's application to a listing.
+
+    Maps directly onto the vendor dashboard's counters. `SUBMITTED` and `UNDER_REVIEW` are
+    separate so "waiting for an answer" means the buyer has actually opened it, not merely
+    that the vendor pressed send.
+    """
+
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    SHORTLISTED = "shortlisted"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+    @classmethod
+    def open_states(cls) -> tuple[str, ...]:
+        """Applications still awaiting a buyer decision — the dashboard's "waiting" bucket."""
+        return (cls.SUBMITTED.value, cls.UNDER_REVIEW.value, cls.SHORTLISTED.value)
+
+    @classmethod
+    def decided_states(cls) -> tuple[str, ...]:
+        return (cls.APPROVED.value, cls.REJECTED.value)
+
+
+class ScreeningStatus(VocabularyEnum):
+    """Where a submission sits in the document-screening pipeline.
+
+    Mirrors `AnalysisStatus` rather than reusing it: the two pipelines fail for different
+    reasons and are polled by different dashboards, and a shared vocabulary would force one
+    to carry states the other can never enter.
+    """
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RequiredDocumentType(VocabularyEnum):
+    """The checklist a buyer builds a listing's document requirements from.
+
+    A controlled list — not free text — because screening matches an uploaded file against
+    these keys. A buyer inventing "Trade Licence (copy)" would produce a requirement no
+    classifier can ever satisfy, and every vendor would score as missing it.
+    """
+
+    TRADE_LICENCE = "trade_licence"
+    COMMERCIAL_REGISTRATION = "commercial_registration"
+    VAT_TAX_CERTIFICATE = "vat_tax_certificate"
+    ESTABLISHMENT_CARD = "establishment_card"
+    AUTHORISED_SIGNATORY = "authorised_signatory"
+    COMPANY_PROFILE = "company_profile"
+    AUDITED_FINANCIALS = "audited_financials"
+    BANK_REFERENCE_LETTER = "bank_reference_letter"
+    BID_BOND = "bid_bond"
+    PERFORMANCE_GUARANTEE = "performance_guarantee"
+    INSURANCE_CERTIFICATE = "insurance_certificate"
+    ISO_CERTIFICATION = "iso_certification"
+    HSE_PLAN = "hse_plan"
+    QUALITY_PLAN = "quality_plan"
+    TECHNICAL_PROPOSAL = "technical_proposal"
+    COMMERCIAL_PROPOSAL = "commercial_proposal"
+    METHOD_STATEMENT = "method_statement"
+    PROJECT_SCHEDULE = "project_schedule"
+    STAFF_CVS = "staff_cvs"
+    ORGANISATION_CHART = "organisation_chart"
+    EQUIPMENT_LIST = "equipment_list"
+    PAST_PROJECT_REFERENCES = "past_project_references"
+    CLIENT_TESTIMONIAL = "client_testimonial"
+    OTHER = "other"
+
+
+class DocumentScreeningVerdict(VocabularyEnum):
+    """Per-requirement outcome of screening a submission's documents.
+
+    `UNREADABLE` is separate from `MISSING` on purpose: a scanned page that OCR could not read
+    is a fixable upload problem, and telling a vendor "missing" when they did supply the file
+    is both wrong and unactionable (`docs/03` §9 — absence is not proof of non-existence).
+
+    `UNVERIFIED` is separate again. It means the document arrived and was read, but the
+    credential it asserts could not be confirmed against the issuing registry — the number is
+    not on file, or is recorded as withdrawn. Reporting that as `MISSING` would tell a vendor
+    to upload a document they already uploaded; reporting it as `PRESENT` would let an
+    unverifiable claim earn full credit.
+    """
+
+    PRESENT = "present"
+    PRESENT_EXPIRED = "present_expired"
+    PRESENT_UNREADABLE = "present_unreadable"
+    PRESENT_UNVERIFIED = "present_unverified"
+    MISSING = "missing"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class CertificateStatus(VocabularyEnum):
+    """State of a certificate in the issuing body's register.
+
+    `SUSPENDED` and `WITHDRAWN` are both "not currently valid" but are kept apart because they
+    say different things to a buyer: a suspended certificate may be reinstated, a withdrawn one
+    will not be.
+    """
+
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    SUSPENDED = "suspended"
+    WITHDRAWN = "withdrawn"
+
+
+class NotificationType(VocabularyEnum):
+    """What a notification is telling its recipient about."""
+
+    APPLICATION_RECEIVED = "application_received"
+    SCREENING_COMPLETED = "screening_completed"
+    SCREENING_FAILED = "screening_failed"
+    APPLICATION_STATUS_CHANGED = "application_status_changed"
+    DEADLINE_APPROACHING = "deadline_approaching"
+    LISTING_CLOSED = "listing_closed"

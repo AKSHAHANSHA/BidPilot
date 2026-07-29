@@ -10,6 +10,7 @@ from __future__ import annotations
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request, Response, status
+from pydantic import BaseModel, Field
 
 from app.api.dependencies import (
     AuthServiceDep,
@@ -25,6 +26,8 @@ from app.repositories.user_repository import normalize_email
 from app.schemas.auth import (
     LoginRequest,
     LogoutResponse,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     RegisterRequest,
     SessionRead,
     TokenResponse,
@@ -38,6 +41,27 @@ _AUTH_PROBLEM_RESPONSES: dict[int | str, dict[str, object]] = {
     HTTPStatus.UNAUTHORIZED: {"model": ProblemDetail},
     HTTPStatus.TOO_MANY_REQUESTS: {"model": ProblemDetail},
 }
+
+#: The single answer `/password-reset/request` ever gives. Fixed text, because a body that
+#: differed for a registered address would be the account-enumeration oracle the endpoint's
+#: whole design exists to avoid (`docs/09_PORTAL_SPEC.md` §3.2).
+RESET_ACCEPTED_DETAIL = (
+    "If that address has an account, a reset link is on its way. The link expires shortly, "
+    "and requesting a new one invalidates the old."
+)
+
+
+class PasswordResetAccepted(BaseModel):
+    """Acknowledgement for `POST /auth/password-reset/request`.
+
+    Declared here rather than in `app/schemas/auth.py` because it carries no data: it exists so
+    the 202 has a documented body instead of an untyped null, and its only field is a constant.
+    """
+
+    detail: str = Field(
+        default=RESET_ACCEPTED_DETAIL,
+        description="Fixed text. Identical whether or not the address is registered.",
+    )
 
 
 def _rate_limit_identity(email: str, client: ClientContext, settings: Settings) -> str:
@@ -101,9 +125,16 @@ def _token_response(result: AuthResult) -> TokenResponse:
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create an account and sign in",
+    description=(
+        "The account and its organisation are created in one transaction, so a user can never "
+        "exist without the identity every listing card and applicant row has to render. "
+        "`account_type` fixes which side of the marketplace this account is on and is never "
+        "changed afterwards; the organisation inherits it rather than restating it."
+    ),
     responses={
         HTTPStatus.CONFLICT: {"model": ProblemDetail},
         HTTPStatus.TOO_MANY_REQUESTS: {"model": ProblemDetail},
+        HTTPStatus.UNPROCESSABLE_ENTITY: {"model": ProblemDetail},
     },
 )
 async def register(
@@ -126,6 +157,8 @@ async def register(
         email=str(payload.email),
         password=payload.password,
         display_name=payload.display_name,
+        account_type=payload.account_type,
+        organisation=payload.organisation,
         client=client,
     )
     _set_refresh_cookie(response, result, settings)
@@ -190,6 +223,67 @@ async def refresh(
 
 
 @router.post(
+    "/password-reset/request",
+    response_model=PasswordResetAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Request a password reset link",
+    description=(
+        "Always 202 with the same body, whether or not the address has an account: a response "
+        "that differed would let anyone test which addresses are registered. Rate limited per "
+        "address and caller. Issuing a link invalidates any earlier unused one."
+    ),
+    responses={HTTPStatus.TOO_MANY_REQUESTS: {"model": ProblemDetail}},
+)
+async def request_password_reset(
+    payload: PasswordResetRequest,
+    auth: AuthServiceDep,
+    client: ClientContextDep,
+    settings: SettingsDep,
+) -> PasswordResetAccepted:
+    limiter = RateLimiter(
+        limit=settings.password_reset_max_attempts,
+        window_seconds=settings.password_reset_window_seconds,
+        scope="password-reset",
+    )
+    # The bucket key is the same shape as sign-in's, so throttling reveals nothing new: it is
+    # keyed on the submitted address and the caller's hashed address, both of which the caller
+    # already supplied.
+    await _enforce_rate_limit(
+        limiter, _rate_limit_identity(str(payload.email), client, settings), "password reset"
+    )
+
+    # Returns nothing, on purpose: there is no result here that could differ for a registered
+    # address, and therefore nothing a future edit to this handler could leak.
+    await auth.request_password_reset(email=str(payload.email), client=client)
+    return PasswordResetAccepted()
+
+
+@router.post(
+    "/password-reset/confirm",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set a new password with a reset token",
+    description=(
+        "Single use. Unknown, already spent, expired, and belonging to a disabled account all "
+        "return the same 401, so a caller holding a guessed token learns nothing about which "
+        "part of the guess was wrong. Success revokes every refresh session for the account — "
+        "resetting a password is exactly when a user wants sessions they do not control "
+        "dropped — so this does not sign anyone in and the refresh cookie is cleared."
+    ),
+    responses={HTTPStatus.UNAUTHORIZED: {"model": ProblemDetail}},
+)
+async def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    response: Response,
+    auth: AuthServiceDep,
+    settings: SettingsDep,
+) -> None:
+    await auth.reset_password(token=payload.token, new_password=payload.new_password)
+    # Every session for this account has just been revoked, so the cookie in this browser is
+    # already dead; clearing it means the next call is a clean sign-in rather than a 401.
+    _clear_refresh_cookie(response, settings)
+
+
+@router.post(
     "/logout",
     response_model=LogoutResponse,
     summary="Revoke the current session",
@@ -231,9 +325,16 @@ async def logout_all(
     "/me",
     response_model=UserRead,
     summary="The signed-in user",
+    description=(
+        "Includes `account_type` — which side of the marketplace this account is on, fixed at "
+        "registration — and a summary of its organisation. The summary carries no contact "
+        "block: it is the same shape a listing card shows to the public."
+    ),
     responses=_AUTH_PROBLEM_RESPONSES,
 )
 async def me(current_user: CurrentUser) -> UserRead:
+    # `organisation` is loaded by the `CurrentUser` dependency; serialising it from a lazy
+    # relationship would fail mid-response under async SQLAlchemy.
     return UserRead.model_validate(current_user)
 
 
