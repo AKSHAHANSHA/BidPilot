@@ -1,6 +1,8 @@
 /* Fonts first: @import rules must precede all other rules. Self-host before deployment. */
-@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+/* The marketplace theme. Namespaced tokens, opted into with `.portal` — see portal.css. */
+@import "./portal.css";
 
 /* The Procurement Ledger — a warm-white editorial workspace (docs/05 §2). Not a generic
    AI dashboard: paper tones, hairline rules, strong black dividers, editorial-red signals. */

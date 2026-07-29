@@ -1,0 +1,357 @@
+/* The portal theme — a dark, luminous surface for the public marketplace and the dashboards.
+ *
+ * This lives ALONGSIDE the warm-paper editorial theme in index.css rather than replacing it.
+ * The original analysis workspace is a reading environment and its paper palette is right for
+ * that; the marketplace is a shopfront and needs the opposite. Every token here is namespaced
+ * `portal-`, so the two palettes generate disjoint utilities and neither can override the
+ * other by accident. A page opts in by rendering inside `.portal`.
+ *
+ * Motion is plain CSS plus one IntersectionObserver (see components/portal/Reveal.tsx). A
+ * motion library would be the single largest dependency in the project, and everything here is
+ * a transform or an opacity — the two things browsers animate well unaided.
+ */
+
+@theme {
+  /* Surfaces. Not pure black: a slight blue lift stops the neon accents from vibrating. */
+  --color-portal-void: #06070d;
+  --color-portal-deep: #0b0d17;
+  --color-portal-raised: #12152a;
+
+  /* Text */
+  --color-portal-ink: #e9ecf7;
+  --color-portal-muted: #8d95af;
+  --color-portal-faint: #5b6280;
+
+  /* Hairlines */
+  --color-portal-line: #232841;
+  --color-portal-line-bright: #343b5e;
+
+  /* Accents — violet to cyan is the through-line of the whole surface. */
+  --color-portal-violet: #7c5cff;
+  --color-portal-indigo: #5b7cfa;
+  --color-portal-cyan: #35dde6;
+
+  /* Status. Deliberately not the accent colours: a deadline warning must not read as
+     decoration, and the accent gradient is decoration everywhere else. */
+  --color-portal-emerald: #2fd39a;
+  --color-portal-amber: #ffb547;
+  --color-portal-rose: #ff5d7a;
+
+  --font-portal: "Space Grotesk", "Source Sans 3", system-ui, sans-serif;
+
+  --radius-portal: 14px;
+  --radius-portal-lg: 22px;
+
+  /* Chart marks.
+   *
+   * NOT the accent colours above. Those are tuned to glow on a dark surface, which puts them
+   * far outside the lightness band a chart mark has to sit in — every one of them failed the
+   * dark-mode palette check. These are the same hues re-stepped until the whole set passed:
+   * lightness band, chroma floor, CVD separation (worst adjacent ΔE 10.8 under deuteranopia,
+   * against a target of 8), the normal-vision floor (19.3, floor 15), and 3:1 contrast against
+   * --color-portal-deep. Changing one of these means re-running the validator on the set.
+   *
+   * These carry STATUS meaning — an application is approved or rejected — so they are status
+   * tokens, not series identity, and every mark that uses one also carries a text label. */
+  --color-chart-cyan: #01a3aa;
+  --color-chart-violet: #7b66ed;
+  --color-chart-amber: #ad7205;
+  --color-chart-emerald: #26ab7c;
+  --color-chart-rose: #b4314c;
+  /* De-emphasis. Deliberately below the chroma floor: it reads as gray, which is exactly the
+   * job — "not yet in play" is context, not a category competing for attention. */
+  --color-chart-muted: #5b6280;
+
+  /* Ordinal ramp for the pipeline, light → dark. Validated with --ordinal: monotone lightness,
+   * every adjacent gap ≥ 0.06, single hue (1° spread), light end 3.11:1 on the surface. */
+  --color-chart-step-1: #bcadff;
+  --color-chart-step-2: #aa92ff;
+  --color-chart-step-3: #9974ff;
+  --color-chart-step-4: #8b50ff;
+  --color-chart-step-5: #7e09ff;
+}
+
+/* ---------------------------------------------------------------- root ---- */
+
+.portal {
+  background-color: var(--color-portal-void);
+  color: var(--color-portal-ink);
+  font-family: var(--font-portal);
+  /* The paper theme paints a dot grid on <html>; inside the portal it must not show through. */
+  background-image: none;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+/* Ambient field: two soft colour pools and a fine grid. Fixed rather than scrolling, so the
+   background reads as a space the content moves through instead of a texture glued to it. */
+.portal-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.portal-field::before,
+.portal-field::after {
+  content: "";
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  max-width: 900px;
+  max-height: 900px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.5;
+}
+
+.portal-field::before {
+  background: radial-gradient(circle, var(--color-portal-violet), transparent 65%);
+  top: -22vw;
+  left: -14vw;
+  animation: portal-drift-a 26s ease-in-out infinite alternate;
+}
+
+.portal-field::after {
+  background: radial-gradient(circle, var(--color-portal-cyan), transparent 65%);
+  top: 24vh;
+  right: -20vw;
+  opacity: 0.32;
+  animation: portal-drift-b 32s ease-in-out infinite alternate;
+}
+
+/* The grid sits above the colour pools so the pools appear to light it from behind. */
+.portal-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--color-portal-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-portal-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.35;
+  /* Fades out downward so the grid never competes with content further down the page. */
+  mask-image: linear-gradient(to bottom, black, transparent 65%);
+}
+
+@keyframes portal-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vw, 8vh, 0) scale(1.15);
+  }
+}
+
+@keyframes portal-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-7vw, -6vh, 0) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------- glass ---- */
+
+.portal-glass {
+  background: color-mix(in srgb, var(--color-portal-deep) 72%, transparent);
+  border: 1px solid var(--color-portal-line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--radius-portal);
+}
+
+.portal-glass-lift {
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+  will-change: transform;
+}
+
+.portal-glass-lift:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-portal-line-bright);
+  box-shadow:
+    0 18px 40px -22px rgb(0 0 0 / 0.9),
+    0 0 0 1px color-mix(in srgb, var(--color-portal-violet) 30%, transparent);
+}
+
+/* A gradient hairline that only appears on hover — the "charged" edge, used on cards and the
+   primary button. Implemented as a pseudo-element so it never affects layout. */
+.portal-edge {
+  position: relative;
+}
+
+.portal-edge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    130deg,
+    var(--color-portal-violet),
+    var(--color-portal-cyan) 55%,
+    transparent 80%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.portal-edge:hover::after,
+.portal-edge:focus-within::after {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------ typography -- */
+
+.portal-gradient-text {
+  background: linear-gradient(
+    100deg,
+    var(--color-portal-ink) 10%,
+    var(--color-portal-violet) 45%,
+    var(--color-portal-cyan) 80%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------------------------------------------------------------- motion -- */
+
+/* Entrance used by <Reveal>. The element starts displaced and is released when the observer
+   adds `is-visible`; without JavaScript the content is simply visible, never stuck hidden. */
+.portal-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 620ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    transform 620ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.portal-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Slow conic sweep behind the hero input, so the search bar reads as the live element. */
+@keyframes portal-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.portal-sweep::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--color-portal-violet) 40deg,
+    var(--color-portal-cyan) 80deg,
+    transparent 140deg
+  );
+  animation: portal-sweep 7s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes portal-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+.portal-pulse {
+  animation: portal-pulse 2.4s ease-in-out infinite;
+}
+
+/* Category marquee. Duration is set per-instance with --portal-marquee-duration. */
+@keyframes portal-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.portal-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: portal-marquee var(--portal-marquee-duration, 48s) linear infinite;
+}
+
+.portal-marquee:hover .portal-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes portal-shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* Loading placeholder that reads as "content is coming", not as a broken card. */
+.portal-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-portal-deep) 8%,
+    var(--color-portal-raised) 18%,
+    var(--color-portal-deep) 33%
+  );
+  background-size: 200% 100%;
+  animation: portal-shimmer 1.4s linear infinite;
+}
+
+/* index.css already neutralises animation and transition durations globally under
+   prefers-reduced-motion. These two need more than a duration change: an infinite transform
+   still moves at 0.01ms, and a reveal must not be left mid-transform. */
+@media (prefers-reduced-motion: reduce) {
+  .portal-field::before,
+  .portal-field::after,
+  .portal-marquee-track,
+  .portal-sweep::before,
+  .portal-pulse,
+  .portal-shimmer {
+    animation: none;
+  }
+
+  .portal-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------- controls -- */
+
+.portal :focus-visible {
+  outline: 2px solid var(--color-portal-cyan);
+  outline-offset: 2px;
+}
+
+/* Dark-surface scrollbars; the default light one cuts a bright stripe down the page. */
+.portal * {
+  scrollbar-color: var(--color-portal-line-bright) transparent;
+  scrollbar-width: thin;
+}

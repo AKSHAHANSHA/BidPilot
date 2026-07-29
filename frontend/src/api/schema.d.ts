@@ -135,6 +135,208 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your own applications
+         * @description Every status including your own drafts, newest first. Filter with `status`.
+         */
+        get: operations["list_applications_api_v1_applications_get"];
+        put?: never;
+        /**
+         * Start a draft application
+         * @description Created against a published listing that is still accepting bids; anything else is a 404 for an unpublished listing or a 409 for a closed one. One application per vendor per listing — a second attempt returns 409 naming the existing one.
+         */
+        post: operations["create_application_api_v1_applications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vendor dashboard aggregates
+         * @description Counts by status, a `waiting` roll-up of everything still awaiting a decision, and the money. Applications missing a figure are excluded from that figure and counted in `incomplete_financials`, so a partly-filled dashboard is visibly partial rather than quietly wrong. `margin_percentage` and `win_rate` are null — never zero — when their denominator is zero: a win rate over no decisions is unknown, not nil.
+         */
+        get: operations["get_application_stats_api_v1_applications_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of your applications */
+        get: operations["get_application_api_v1_applications__application_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a draft application
+         * @description Drafts only. Once submitted the bid is what the buyer is reading, and editing it would make their applicant list a description of something that no longer exists.
+         */
+        patch: operations["update_application_api_v1_applications__application_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Shortlist, approve, or reject an applicant
+         * @description The vendor is notified, and your note is shown to them verbatim. A withdrawn application is no longer yours to judge, and an approval or rejection is not overwritten once the vendor has been told — both return 409.
+         */
+        patch: operations["decide_application_api_v1_applications__application_id__decision_patch"];
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach a PDF to a draft application
+         * @description Multipart, one file per call, drafts only. The file must be a PDF by content (magic bytes), not just by name; size and page count are bounded; an identical file (SHA-256) already on this application returns 409. Storage paths are generated server-side — the client filename is display-only. `declared_document_type` is the vendor's own label and is a hint for screening, never a verdict: the pipeline still decides what the file actually is from its text.
+         */
+        post: operations["upload_application_document_api_v1_applications__application_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a document from a draft application */
+        delete: operations["delete_application_document_api_v1_applications__application_id__documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an applicant as under review
+         * @description Records that you have opened this application and moves it from `submitted` to `under_review`, which is what lets a vendor tell 'waiting for an answer' from 'nobody has looked yet'. The first-viewed timestamp is written once and never overwritten. No notification is sent: being read is not a decision, and a message for it would train vendors to ignore the ones that are.
+         */
+        post: operations["review_applicant_api_v1_applications__application_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/screening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the screening result for your application
+         * @description Poll this while the status is `pending` or `processing`. There is no progress percentage: the status is the real pipeline stage, and a number nobody can check would be a fabrication. `overall_score` is computed in Python from the findings and is null until the run completes. Pages with no readable text that OCR could not recover are counted in `pages_needing_ocr` and reported as unreadable — never folded into `missing`, because the two need different things from you. 404 until the application has been submitted.
+         */
+        get: operations["get_application_screening_api_v1_applications__application_id__screening_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit the application and queue its screening
+         * @description 202 because a screening job is queued; poll `/applications/{id}/screening` for the real stage. At least one document is required — screening has nothing to assess otherwise — and the listing must still be open. Pressing submit twice changes nothing: the buyer is not told twice and the pipeline does not run twice. A screening that failed on our side can be re-run by submitting again, and that path is allowed even after the deadline, because re-running our own failure does not change the bid.
+         */
+        post: operations["submit_application_api_v1_applications__application_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a submitted application
+         * @description Idempotent. Refused for a draft, which was never sent, and after a decision, which is a matter of record. Withdrawing is final: the same listing cannot be applied to again.
+         */
+        post: operations["withdraw_application_api_v1_applications__application_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -199,10 +401,53 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The signed-in user */
+        /**
+         * The signed-in user
+         * @description Includes `account_type` — which side of the marketplace this account is on, fixed at registration — and a summary of its organisation. The summary carries no contact block: it is the same shape a listing card shows to the public.
+         */
         get: operations["me_api_v1_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a new password with a reset token
+         * @description Single use. Unknown, already spent, expired, and belonging to a disabled account all return the same 401, so a caller holding a guessed token learns nothing about which part of the guess was wrong. Success revokes every refresh session for the account — resetting a password is exactly when a user wants sessions they do not control dropped — so this does not sign anyone in and the refresh cookie is cleared.
+         */
+        post: operations["confirm_password_reset_api_v1_auth_password_reset_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a password reset link
+         * @description Always 202 with the same body, whether or not the address has an account: a response that differed would let anyone test which addresses are registered. Rate limited per address and caller. Issuing a link invalidates any earlier unused one.
+         */
+        post: operations["request_password_reset_api_v1_auth_password_reset_request_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -238,7 +483,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create an account and sign in */
+        /**
+         * Create an account and sign in
+         * @description The account and its organisation are created in one transaction, so a user can never exist without the identity every listing card and applicant row has to render. `account_type` fixes which side of the marketplace this account is on and is never changed afterwards; the organisation inherits it rather than restating it.
+         */
         post: operations["register_api_v1_auth_register_post"];
         delete?: never;
         options?: never;
@@ -482,6 +730,335 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your own listings
+         * @description Every status including drafts, newest first. Filter with `status`.
+         */
+        get: operations["list_listings_api_v1_listings_get"];
+        put?: never;
+        /**
+         * Create a draft listing
+         * @description Always created as a draft: `status` and `published_at` belong to the publish transition, which can check that the listing is actually biddable. A `reference` already used by another of your listings returns 409.
+         */
+        post: operations["create_listing_api_v1_listings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of your listings */
+        get: operations["get_listing_api_v1_listings__listing_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a listing
+         * @description Partial update, allowed while the listing is a draft or published. A closed, awarded, or cancelled listing returns 409: its terms are the ones applicants bid against. A published listing cannot lose its deadline or have it moved into the past — use `/close` for that, so the applicants are told.
+         */
+        patch: operations["update_listing_api_v1_listings__listing_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the applicants on one of your listings
+         * @description Ranked by screening score, highest first, with unscored submissions last rather than sorted to the top as though an empty score were the best one. Drafts are never returned: an unsent bid is not an applicant. `estimated_cost` and the margin derived from it are vendor-private and absent from this shape by construction.
+         */
+        get: operations["list_applicants_api_v1_listings__listing_id__applications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a published listing
+         * @description Ends the bidding window and notifies every applicant who has not withdrawn. Only a published listing can be closed; one whose deadline has merely passed is still published in the record and this is the normal way to settle it.
+         */
+        post: operations["close_listing_api_v1_listings__listing_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a draft listing
+         * @description Only a draft can be published. Every unmet precondition is reported in one message: a submission deadline in the future, a description to bid against, and at least one mandatory document requirement — without one, every applicant screens identically and the score ranks nothing.
+         */
+        post: operations["publish_listing_api_v1_listings__listing_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace the document checklist
+         * @description The body is a bare array and replaces the whole checklist — omitting an entry is how a requirement is removed. Position in the array is the display order. Refused with 409 once any application has been submitted: those bids were screened against the current list, and their stored scores would silently start describing requirements the applicants were never given.
+         */
+        put: operations["replace_requirements_api_v1_listings__listing_id__requirements_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your notifications
+         * @description Newest first. Set `unread_only` to show only what is still waiting.
+         */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unread and total counts for the header badge
+         * @description Two numbers rather than one so the badge can say '3 of 40' without pulling a page of rows it is not going to render.
+         */
+        get: operations["get_notification_counts_api_v1_notifications_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark every notification read
+         * @description Idempotent. Only notifications belonging to the signed-in account are touched.
+         */
+        post: operations["mark_all_read_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification read
+         * @description Idempotent: a second call succeeds and keeps the original read timestamp. A notification belonging to another account answers 404, exactly as a missing one does.
+         */
+        post: operations["mark_notification_read_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organisation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the signed-in account's organisation
+         * @description Registration creates the organisation in the same transaction as the account, so a 404 here means a pre-portal account rather than an ordinary empty state.
+         */
+        get: operations["get_organisation_api_v1_organisation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the signed-in account's organisation
+         * @description Partial update; omitted fields are left unchanged. `account_type` and `is_verified` are not editable — the first is fixed at registration and the second is set by an administrator out of band.
+         */
+        patch: operations["update_organisation_api_v1_organisation_patch"];
+        trace?: never;
+    };
+    "/api/v1/public/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The category taxonomy with live listing counts
+         * @description Every category, busiest first. Categories with no published listings are still returned so the landing page can render the whole taxonomy without it flickering as listings close. The full set always fits in one page; there is nothing to page through.
+         */
+        get: operations["list_categories_api_v1_public_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse the published tender catalogue
+         * @description Published listings only — drafts, cancelled, and closed tenders are never returned. All filters combine with AND. A budget filter is a range *overlap*: a listing quoting 1M-3M matches a search for anything above 2M. Listings that disclose no budget are excluded from a budget-filtered search rather than presented as possible matches.
+         */
+        get: operations["list_public_listings_api_v1_public_listings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/listings/{listing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one published listing
+         * @description The full brief, the buyer's organisation, and the document checklist an applicant will be screened against. Anything not published is 404 — a visitor learns nothing about a buyer's drafts.
+         */
+        get: operations["get_public_listing_api_v1_public_listings__listing_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Match listings to a plain-language description
+         * @description The query is untrusted evidence, never an instruction: it is passed to the model as user content between delimiters and never interpolated into a system prompt. The model returns only a structured interpretation — it never sees the listing set and never orders results, so it cannot invent a listing. Ranking is deterministic Python over that interpretation, which is echoed back so the user can correct it. With no model configured the interpretation is derived from plain text processing and `degraded` is true; search never pretends a model ran.
+         */
+        post: operations["search_listings_api_v1_public_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Landing-page counters
+         * @description Published listings only. `total_published_value` sums the disclosed budgets; a listing that names no budget contributes nothing rather than an estimate.
+         */
+        get: operations["get_portal_stats_api_v1_public_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requirements/{requirement_id}": {
         parameters: {
             query?: never;
@@ -626,6 +1203,15 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AccountType
+         * @description Which side of the marketplace an account sits on.
+         *
+         *     Chosen at registration and immutable afterwards: an account's listings and applications
+         *     are meaningless if its side can flip underneath them. Changing sides means a new account.
+         * @enum {string}
+         */
+        AccountType: "company" | "vendor";
+        /**
          * AnalysisErrorCode
          * @description Safe, machine-readable failure reason. Developer detail lives in logs only.
          * @enum {string}
@@ -716,10 +1302,316 @@ export interface components {
          * @enum {string}
          */
         AnalysisStatus: "queued" | "processing" | "completed" | "failed" | "cancelled";
+        /**
+         * ApplicantRead
+         * @description The buyer's view of one applicant on their listing.
+         *
+         *     Deliberately does not inherit from `ApplicationRead`. `estimated_cost` and
+         *     `margin_amount` are absent by construction, so no future field on the vendor's view can
+         *     reach a buyer through this schema (`docs/09` §10 rule 8).
+         *
+         *     `vendor_organisation` is an `OrganisationSummary`: a buyer sees who bid and where they
+         *     are, not the vendor's contact block.
+         */
+        ApplicantRead: {
+            /** Bid Amount */
+            bid_amount: string | null;
+            /**
+             * Cover Letter
+             * @description The vendor's pitch, written for you.
+             */
+            cover_letter: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Decision Note */
+            decision_note: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Proposed Duration Months */
+            proposed_duration_months: number | null;
+            /** @description Null until the vendor submits and screening runs. Applicants are ranked by `overall_score`. */
+            screening: components["schemas"]["ScreeningSummary"] | null;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            vendor_organisation: components["schemas"]["OrganisationSummary"];
+        };
+        /**
+         * ApplicationCreate
+         * @description A new draft application against a published listing.
+         *
+         *     `status` is absent: an application is born a draft and moves through `/submit` and
+         *     `/withdraw`, which can enforce their preconditions. The buyer's decision has its own
+         *     endpoint and its own schema.
+         */
+        ApplicationCreate: {
+            /**
+             * Bid Amount
+             * @description What the vendor is charging. Shown to the buyer.
+             */
+            bid_amount?: number | string | null;
+            /** Cover Letter */
+            cover_letter?: string | null;
+            /**
+             * Estimated Cost
+             * @description What the vendor expects the work to cost them. Private to the vendor and never serialised into a buyer-facing response.
+             */
+            estimated_cost?: number | string | null;
+            /**
+             * Listing Id
+             * Format: uuid
+             */
+            listing_id: string;
+            /** Proposed Duration Months */
+            proposed_duration_months?: number | null;
+        };
+        /**
+         * ApplicationDecision
+         * @description `PATCH /applications/{id}/decision` — the buyer's verdict.
+         *
+         *     The status is restricted to the three a buyer may actually set. `withdrawn` belongs to the
+         *     vendor, and `draft`/`submitted`/`under_review` are pipeline states, not decisions.
+         */
+        ApplicationDecision: {
+            /**
+             * Note
+             * @description The buyer's stated reason. Shown to the vendor verbatim.
+             */
+            note?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "shortlisted" | "approved" | "rejected";
+        };
+        /**
+         * ApplicationDocumentRead
+         * @description A file attached to an application. Metadata only — the bytes are fetched separately.
+         */
+        ApplicationDocumentRead: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** @description What the vendor said this file is. A hint for screening, never a verdict. */
+            declared_document_type: components["schemas"]["RequiredDocumentType"] | null;
+            /**
+             * Declared Document Type Label
+             * @description Human-readable form of `declared_document_type`.
+             */
+            readonly declared_document_type_label: string | null;
+            /** @description What screening concluded it actually is, from the extracted text. */
+            detected_document_type: components["schemas"]["RequiredDocumentType"] | null;
+            /**
+             * Detected Document Type Label
+             * @description Human-readable form of `detected_document_type`.
+             */
+            readonly detected_document_type_label: string | null;
+            extraction_status: components["schemas"]["DocumentExtractionStatus"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Original Filename */
+            original_filename: string;
+            /** Page Count */
+            page_count: number | null;
+            /**
+             * Sha256
+             * @description Content hash. Two identical uploads on one application are rejected.
+             */
+            sha256: string;
+            /** Size Bytes */
+            size_bytes: number;
+        };
+        /**
+         * ApplicationRead
+         * @description The vendor's own view of their application.
+         *
+         *     Carries `estimated_cost` and `margin_amount` because the vendor owns both. Never return
+         *     this shape to a buyer — see `ApplicantRead`.
+         *
+         *     `listing`, `documents`, and `screening` are populated from relationships, so the service
+         *     must load them eagerly; a lazy load inside serialisation fails under async SQLAlchemy.
+         */
+        ApplicationRead: {
+            /** Bid Amount */
+            bid_amount: string | null;
+            /** Cover Letter */
+            cover_letter: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at: string | null;
+            /**
+             * Decision Note
+             * @description The buyer's reason, in the buyer's words.
+             */
+            decision_note: string | null;
+            /** Documents */
+            documents: components["schemas"]["ApplicationDocumentRead"][];
+            /**
+             * Estimated Cost
+             * @description Vendor-private. Never appears in a buyer-facing schema.
+             */
+            estimated_cost: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            listing: components["schemas"]["ListingCard"];
+            /**
+             * Listing Id
+             * Format: uuid
+             */
+            listing_id: string;
+            /**
+             * Margin Amount
+             * @description `bid_amount - estimated_cost`. Derived on read, null when either figure is missing, and negative when the bid is below cost.
+             */
+            margin_amount: string | null;
+            /** Proposed Duration Months */
+            proposed_duration_months: number | null;
+            screening: components["schemas"]["ScreeningSummary"] | null;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Withdrawn At */
+            withdrawn_at: string | null;
+        };
+        /**
+         * ApplicationStatus
+         * @description Lifecycle of a vendor's application to a listing.
+         *
+         *     Maps directly onto the vendor dashboard's counters. `SUBMITTED` and `UNDER_REVIEW` are
+         *     separate so "waiting for an answer" means the buyer has actually opened it, not merely
+         *     that the vendor pressed send.
+         * @enum {string}
+         */
+        ApplicationStatus: "draft" | "submitted" | "under_review" | "shortlisted" | "approved" | "rejected" | "withdrawn";
+        /**
+         * ApplicationSummary
+         * @description One row of the vendor's application list.
+         *
+         *     Everything `ApplicationRead` has except the attached documents, which the list query does
+         *     not load — reading them here would emit one query per row, and a page of twenty-five bids
+         *     does not need twenty-five file listings to render.
+         *
+         *     Declared here rather than in `app/schemas/application.py` only because that module is
+         *     owned elsewhere; it belongs beside its sibling shapes. Whoever moves it may instead delete
+         *     it and use `ApplicationRead`, provided `ApplicationRepository.list_for_vendor` starts
+         *     eager-loading `Application.documents` — today it does not, and serialising `ApplicationRead`
+         *     from that query fails at read time rather than at import time.
+         */
+        ApplicationSummary: {
+            /** Bid Amount */
+            bid_amount: string | null;
+            /** Cover Letter */
+            cover_letter: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at: string | null;
+            /** Decision Note */
+            decision_note: string | null;
+            /** Estimated Cost */
+            estimated_cost: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            listing: components["schemas"]["ListingCard"];
+            /**
+             * Listing Id
+             * Format: uuid
+             */
+            listing_id: string;
+            /** Margin Amount */
+            margin_amount: string | null;
+            /** Proposed Duration Months */
+            proposed_duration_months: number | null;
+            screening: components["schemas"]["ScreeningSummary"] | null;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Withdrawn At */
+            withdrawn_at: string | null;
+        };
+        /**
+         * ApplicationUpdate
+         * @description Partial update of a draft. Omitted fields are left untouched.
+         */
+        ApplicationUpdate: {
+            /** Bid Amount */
+            bid_amount?: number | string | null;
+            /** Cover Letter */
+            cover_letter?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: number | string | null;
+            /** Proposed Duration Months */
+            proposed_duration_months?: number | null;
+        };
+        /** Body_upload_application_document_api_v1_applications__application_id__documents_post */
+        Body_upload_application_document_api_v1_applications__application_id__documents_post: {
+            declared_document_type?: components["schemas"]["RequiredDocumentType"] | null;
+            /** File */
+            file: string;
+        };
         /** Body_upload_document_api_v1_tenders__tender_id__documents_post */
         Body_upload_document_api_v1_tenders__tender_id__documents_post: {
             /** File */
             file: string;
+        };
+        /**
+         * CategoryCount
+         * @description One row of `GET /public/categories`.
+         *
+         *     Categories with no published listings are still returned — the landing page renders the
+         *     whole taxonomy, and a category that vanished when its last listing closed would make the
+         *     navigation flicker.
+         */
+        CategoryCount: {
+            category: components["schemas"]["TenderCategory"];
+            /**
+             * Count
+             * @description Published listings in this category.
+             */
+            count: number;
+            /**
+             * Label
+             * @description Human-readable form of `category`.
+             */
+            readonly label: string;
         };
         /**
          * CitationMatchMethod
@@ -1033,6 +1925,71 @@ export interface components {
             /** Tender Id */
             tender_id: string;
         };
+        /** DocumentRequirementRead */
+        DocumentRequirementRead: {
+            /** Display Order */
+            display_order: number;
+            document_type: components["schemas"]["RequiredDocumentType"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Mandatory */
+            is_mandatory: boolean;
+            /**
+             * Label
+             * @description Human-readable form of `document_type`.
+             */
+            readonly label: string;
+            /** Notes */
+            notes: string | null;
+            /** Weight */
+            weight: number;
+        };
+        /**
+         * DocumentRequirementWrite
+         * @description One checklist entry as the buyer submits it.
+         *
+         *     `display_order` is absent deliberately: the order of the list in the request body *is* the
+         *     display order, so a body cannot carry an arrangement that contradicts itself.
+         */
+        DocumentRequirementWrite: {
+            document_type: components["schemas"]["RequiredDocumentType"];
+            /**
+             * Is Mandatory
+             * @description Mandatory items gate the submission; optional ones only move the score.
+             * @default true
+             */
+            is_mandatory: boolean;
+            /**
+             * Notes
+             * @description The buyer's own wording, e.g. "valid for 90 days beyond closing".
+             */
+            notes?: string | null;
+            /**
+             * Weight
+             * @description Relative importance within the mandatory or optional band. Bounded so one requirement cannot dominate the whole score.
+             * @default 1
+             */
+            weight: number;
+        };
+        /**
+         * DocumentScreeningVerdict
+         * @description Per-requirement outcome of screening a submission's documents.
+         *
+         *     `UNREADABLE` is separate from `MISSING` on purpose: a scanned page that OCR could not read
+         *     is a fixable upload problem, and telling a vendor "missing" when they did supply the file
+         *     is both wrong and unactionable (`docs/03` §9 — absence is not proof of non-existence).
+         *
+         *     `UNVERIFIED` is separate again. It means the document arrived and was read, but the
+         *     credential it asserts could not be confirmed against the issuing registry — the number is
+         *     not on file, or is recorded as withdrawn. Reporting that as `MISSING` would tell a vendor
+         *     to upload a document they already uploaded; reporting it as `PRESENT` would let an
+         *     unverifiable claim earn full credit.
+         * @enum {string}
+         */
+        DocumentScreeningVerdict: "present" | "present_expired" | "present_unreadable" | "present_unverified" | "missing" | "not_applicable";
         /**
          * Emirate
          * @description The seven emirates. Fixed by geography, so a check constraint is safe here.
@@ -1151,6 +2108,55 @@ export interface components {
          * @enum {string}
          */
         ExpiryState: "active" | "expiring_soon" | "expired" | "no_expiry" | "unverified";
+        /**
+         * FindingRead
+         * @description One requirement's verdict with the evidence behind it.
+         *
+         *     There is exactly one finding per checklist entry, including the ones nothing satisfied —
+         *     the absence *is* the finding. No separate `id` is exposed: `document_type` is unique
+         *     within a screening (the database says so), which makes it the natural key for the UI.
+         */
+        FindingRead: {
+            /**
+             * Confidence
+             * @description The classifier's self-reported confidence. Advisory only — it never scales the score.
+             */
+            confidence: number | null;
+            document_type: components["schemas"]["RequiredDocumentType"];
+            /**
+             * Evidence Quote
+             * @description Verbatim text from the matched page, re-checked against the stored page text before this finding was written.
+             */
+            evidence_quote: string | null;
+            /**
+             * Is Mandatory
+             * @description Copied from the requirement when the screening ran, so a later edit to the checklist cannot change what this result was measured against.
+             */
+            is_mandatory: boolean;
+            /**
+             * Label
+             * @description Human-readable form of `document_type`.
+             */
+            readonly label: string;
+            /**
+             * Matched Document Id
+             * @description The upload that satisfied this requirement. Always present for a `present` or `present_expired` verdict — a match with nothing behind it is not a match.
+             */
+            matched_document_id: string | null;
+            /**
+             * Note
+             * @description Reviewer-facing explanation, e.g. "licence expires before closing".
+             */
+            note: string | null;
+            /**
+             * Source Page
+             * @description 1-based page the evidence quote was verified on.
+             */
+            source_page: number | null;
+            verdict: components["schemas"]["DocumentScreeningVerdict"];
+            /** Weight */
+            weight: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1168,6 +2174,257 @@ export interface components {
             label: components["schemas"]["DecisionLabel"];
             /** Reason */
             reason: string;
+        };
+        /**
+         * ListingCard
+         * @description One item in the public catalogue grid.
+         *
+         *     Everything here is safe for an unauthenticated caller: no owner identity, no applicant
+         *     identities, no buyer contact details.
+         */
+        ListingCard: {
+            /**
+             * Application Count
+             * @description Applications received so far. A denormalised counter, not a live count.
+             */
+            application_count: number;
+            /** Budget Max */
+            budget_max: string | null;
+            /** Budget Min */
+            budget_min: string | null;
+            category: components["schemas"]["TenderCategory"];
+            /**
+             * Category Label
+             * @description Human-readable form of `category`.
+             */
+            readonly category_label: string;
+            /** City */
+            city: string | null;
+            /** Cover Image Url */
+            cover_image_url: string | null;
+            /** Currency */
+            currency: string;
+            /**
+             * Days Remaining
+             * @description Whole days until the submission deadline. Negative once it has passed, null when the listing has no deadline. Derived on every read, never stored.
+             */
+            readonly days_remaining: number | null;
+            emirate: components["schemas"]["Emirate"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            organisation: components["schemas"]["OrganisationSummary"];
+            /** Submission Deadline */
+            submission_deadline: string | null;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+        };
+        /**
+         * ListingCreate
+         * @description A new listing. Always created as a draft — `status` and `published_at` are set by the
+         *     publish transition, never by the client.
+         */
+        ListingCreate: {
+            /** Bid Bond Percentage */
+            bid_bond_percentage?: number | string | null;
+            /** Budget Max */
+            budget_max?: number | string | null;
+            /** Budget Min */
+            budget_min?: number | string | null;
+            category: components["schemas"]["TenderCategory"];
+            /** City */
+            city?: string | null;
+            /** Contract Duration Months */
+            contract_duration_months?: number | null;
+            /** Cover Image Url */
+            cover_image_url?: string | null;
+            /**
+             * Currency
+             * @default AED
+             */
+            currency: string;
+            /** Description */
+            description: string;
+            emirate: components["schemas"]["Emirate"];
+            /**
+             * Industry
+             * @description Free-text refinement under the controlled category, e.g. "district cooling".
+             */
+            industry?: string | null;
+            /** Min Years Experience */
+            min_years_experience?: number | null;
+            /** Questions Deadline */
+            questions_deadline?: string | null;
+            /**
+             * Reference
+             * @description The buyer's own tender reference. Unique within their organisation.
+             */
+            reference?: string | null;
+            /** Required Certifications */
+            required_certifications?: string[];
+            /**
+             * Requires Bid Bond
+             * @default false
+             */
+            requires_bid_bond: boolean;
+            /**
+             * Submission Deadline
+             * @description Required before the listing can be published; optional on a draft.
+             */
+            submission_deadline?: string | null;
+            /**
+             * Summary
+             * @description One-paragraph pitch for the catalogue card. Separate from `description` so a card never truncates arbitrary prose mid-sentence.
+             */
+            summary: string;
+            /** Tags */
+            tags?: string[];
+            /** Title */
+            title: string;
+        };
+        /**
+         * ListingDetail
+         * @description The full public brief: everything on the card plus the terms and the checklist.
+         */
+        ListingDetail: {
+            /**
+             * Application Count
+             * @description Applications received so far. A denormalised counter, not a live count.
+             */
+            application_count: number;
+            /** Bid Bond Percentage */
+            bid_bond_percentage: string | null;
+            /** Budget Max */
+            budget_max: string | null;
+            /** Budget Min */
+            budget_min: string | null;
+            category: components["schemas"]["TenderCategory"];
+            /**
+             * Category Label
+             * @description Human-readable form of `category`.
+             */
+            readonly category_label: string;
+            /** City */
+            city: string | null;
+            /** Contract Duration Months */
+            contract_duration_months: number | null;
+            /** Cover Image Url */
+            cover_image_url: string | null;
+            /** Currency */
+            currency: string;
+            /**
+             * Days Remaining
+             * @description Whole days until the submission deadline. Negative once it has passed, null when the listing has no deadline. Derived on every read, never stored.
+             */
+            readonly days_remaining: number | null;
+            /** Description */
+            description: string;
+            /** Document Requirements */
+            document_requirements: components["schemas"]["DocumentRequirementRead"][];
+            emirate: components["schemas"]["Emirate"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Industry */
+            industry: string | null;
+            /** Min Years Experience */
+            min_years_experience: number | null;
+            organisation: components["schemas"]["OrganisationSummary"];
+            /** Published At */
+            published_at: string | null;
+            /** Questions Deadline */
+            questions_deadline: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Required Certifications */
+            required_certifications: string[];
+            /** Requires Bid Bond */
+            requires_bid_bond: boolean;
+            status: components["schemas"]["ListingStatus"];
+            /** Submission Deadline */
+            submission_deadline: string | null;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+        };
+        /**
+         * ListingSort
+         * @description Ordering options offered by `GET /public/listings` (`docs/09` §3.1).
+         *
+         *     Not a `VocabularyEnum`: nothing persists a sort key, so there is no check constraint to
+         *     keep in step. It lives beside the query that implements it so adding a member without
+         *     adding an `ORDER BY` is impossible to miss.
+         * @enum {string}
+         */
+        ListingSort: "deadline" | "newest" | "budget_high" | "budget_low";
+        /**
+         * ListingStatus
+         * @description Lifecycle of a published tender listing.
+         *
+         *     `CLOSED` and `AWARDED` are distinct because they answer different questions: closed means
+         *     the window ended, awarded means a winner exists. A listing can be closed for weeks before
+         *     an award is recorded, and the public list needs to say which is true.
+         * @enum {string}
+         */
+        ListingStatus: "draft" | "published" | "closed" | "awarded" | "cancelled";
+        /**
+         * ListingUpdate
+         * @description Partial update. Omitted fields are left untouched.
+         *
+         *     `status` is absent: the lifecycle moves through `/publish` and `/close`, which can enforce
+         *     their preconditions. A PATCHable status would let a listing be published without a
+         *     deadline or reopened after applicants had been told it closed.
+         */
+        ListingUpdate: {
+            /** Bid Bond Percentage */
+            bid_bond_percentage?: number | string | null;
+            /** Budget Max */
+            budget_max?: number | string | null;
+            /** Budget Min */
+            budget_min?: number | string | null;
+            category?: components["schemas"]["TenderCategory"] | null;
+            /** City */
+            city?: string | null;
+            /** Contract Duration Months */
+            contract_duration_months?: number | null;
+            /** Cover Image Url */
+            cover_image_url?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Description */
+            description?: string | null;
+            emirate?: components["schemas"]["Emirate"] | null;
+            /** Industry */
+            industry?: string | null;
+            /** Min Years Experience */
+            min_years_experience?: number | null;
+            /** Questions Deadline */
+            questions_deadline?: string | null;
+            /** Reference */
+            reference?: string | null;
+            /** Required Certifications */
+            required_certifications?: string[] | null;
+            /** Requires Bid Bond */
+            requires_bid_bond?: boolean | null;
+            /** Submission Deadline */
+            submission_deadline?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Title */
+            title?: string | null;
         };
         /** LivenessResponse */
         LivenessResponse: {
@@ -1196,10 +2453,310 @@ export interface components {
              */
             revoked: boolean;
         };
+        /**
+         * NotificationCounts
+         * @description The header badge: how many are waiting, out of how many exist.
+         */
+        NotificationCounts: {
+            /** Total */
+            total: number;
+            /** Unread */
+            unread: number;
+        };
+        /** NotificationRead */
+        NotificationRead: {
+            /** Application Id */
+            application_id: string | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Is Read
+             * @description Whether the recipient has opened this notification.
+             */
+            readonly is_read: boolean;
+            /**
+             * Listing Id
+             * @description Deep-link target. Null once the listing is gone — the notification loses its link rather than vanishing from the recipient's history.
+             */
+            listing_id: string | null;
+            /** Read At */
+            read_at: string | null;
+            /**
+             * Screening Score
+             * @description Denormalised score. Null for types that carry none.
+             */
+            screening_score: number | null;
+            /** Title */
+            title: string;
+            type: components["schemas"]["NotificationType"];
+        };
+        /**
+         * NotificationType
+         * @description What a notification is telling its recipient about.
+         * @enum {string}
+         */
+        NotificationType: "application_received" | "screening_completed" | "screening_failed" | "application_status_changed" | "deadline_approaching" | "listing_closed";
+        /**
+         * OrganisationCreate
+         * @description The organisation block of a registration request.
+         *
+         *     `account_type` is absent by design: it is copied from the account being created, and
+         *     letting a client state it in two places invites the two to disagree. `is_verified` is
+         *     absent for the same reason it is never editable — an administrator sets it out of band.
+         */
+        OrganisationCreate: {
+            /** Address Line */
+            address_line?: string | null;
+            /** City */
+            city?: string | null;
+            /**
+             * Contact Email
+             * Format: email
+             * @description Reachable address for this organisation. Never exposed publicly.
+             */
+            contact_email: string;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /**
+             * Country
+             * @default United Arab Emirates
+             */
+            country: string;
+            /**
+             * Description
+             * @description What the organisation does, in its own words.
+             */
+            description: string;
+            emirate: components["schemas"]["Emirate"];
+            /** Employee Count */
+            employee_count?: number | null;
+            /** Industry */
+            industry?: string | null;
+            /**
+             * Name
+             * @description Registered or trading name, shown on every listing card.
+             */
+            name: string;
+            /**
+             * Registration Number
+             * @description Trade licence or commercial registration number. Free text: the format varies by emirate and by authority.
+             */
+            registration_number?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Year Established */
+            year_established?: number | null;
+        };
+        /**
+         * OrganisationRead
+         * @description The owner's own view, contact block included.
+         *
+         *     Never embed this in a response addressed to anybody but the owner; use
+         *     `OrganisationSummary` there. `owner_user_id` is omitted entirely — the owner already knows
+         *     who they are, and nobody else may learn it.
+         */
+        OrganisationRead: {
+            /** @description Copied from the owning account at registration and never updated. */
+            account_type: components["schemas"]["AccountType"];
+            /** Address Line */
+            address_line: string | null;
+            /** City */
+            city: string | null;
+            /** Contact Email */
+            contact_email: string;
+            /** Contact Phone */
+            contact_phone: string | null;
+            /** Country */
+            country: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description: string;
+            emirate: components["schemas"]["Emirate"];
+            /** Employee Count */
+            employee_count: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Industry */
+            industry: string | null;
+            /** Is Verified */
+            is_verified: boolean;
+            /** Name */
+            name: string;
+            /** Registration Number */
+            registration_number: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Website */
+            website: string | null;
+            /** Year Established */
+            year_established: number | null;
+        };
+        /**
+         * OrganisationSummary
+         * @description The small public shape shown on a listing card or an applicant row.
+         *
+         *     Contact details and `owner_user_id` are absent by construction. This is the *only*
+         *     organisation schema that may appear in an unauthenticated response or in a response
+         *     addressed to the other side of the marketplace.
+         */
+        OrganisationSummary: {
+            /** City */
+            city: string | null;
+            emirate: components["schemas"]["Emirate"];
+            /** Industry */
+            industry: string | null;
+            /**
+             * Is Verified
+             * @description Checked by an administrator out of band. A badge only — verification never affects a screening score.
+             */
+            is_verified: boolean;
+            /** Name */
+            name: string;
+            /** Website */
+            website: string | null;
+        };
+        /**
+         * OrganisationUpdate
+         * @description Partial update. Omitted fields are left untouched.
+         *
+         *     `PATCH` semantics mean "unset" and "absent" must be distinguishable, which is why the
+         *     service applies only the keys present in `model_fields_set`.
+         */
+        OrganisationUpdate: {
+            /** Address Line */
+            address_line?: string | null;
+            /** City */
+            city?: string | null;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Description */
+            description?: string | null;
+            emirate?: components["schemas"]["Emirate"] | null;
+            /** Employee Count */
+            employee_count?: number | null;
+            /** Industry */
+            industry?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Registration Number */
+            registration_number?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Year Established */
+            year_established?: number | null;
+        };
+        /** Page[ApplicantRead] */
+        Page_ApplicantRead_: {
+            /** Items */
+            items: components["schemas"]["ApplicantRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
+        /** Page[ApplicationSummary] */
+        Page_ApplicationSummary_: {
+            /** Items */
+            items: components["schemas"]["ApplicationSummary"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
+        /** Page[CategoryCount] */
+        Page_CategoryCount_: {
+            /** Items */
+            items: components["schemas"]["CategoryCount"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
         /** Page[EvidenceRead] */
         Page_EvidenceRead_: {
             /** Items */
             items: components["schemas"]["EvidenceRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
+        /** Page[ListingCard] */
+        Page_ListingCard_: {
+            /** Items */
+            items: components["schemas"]["ListingCard"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
+        /** Page[ListingDetail] */
+        Page_ListingDetail_: {
+            /** Items */
+            items: components["schemas"]["ListingDetail"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Total
+             * @description Total rows matching the filters, ignoring limit/offset.
+             */
+            total: number;
+        };
+        /** Page[NotificationRead] */
+        Page_NotificationRead_: {
+            /** Items */
+            items: components["schemas"]["NotificationRead"][];
             /** Limit */
             limit: number;
             /** Offset */
@@ -1251,6 +2808,82 @@ export interface components {
              * @description Total rows matching the filters, ignoring limit/offset.
              */
             total: number;
+        };
+        /**
+         * PasswordResetAccepted
+         * @description Acknowledgement for `POST /auth/password-reset/request`.
+         *
+         *     Declared here rather than in `app/schemas/auth.py` because it carries no data: it exists so
+         *     the 202 has a documented body instead of an untyped null, and its only field is a constant.
+         */
+        PasswordResetAccepted: {
+            /**
+             * Detail
+             * @description Fixed text. Identical whether or not the address is registered.
+             * @default If that address has an account, a reset link is on its way. The link expires shortly, and requesting a new one invalidates the old.
+             */
+            detail: string;
+        };
+        /**
+         * PasswordResetConfirm
+         * @description `POST /auth/password-reset/confirm`. Single-use; consuming the token revokes every
+         *     refresh session for that account.
+         */
+        PasswordResetConfirm: {
+            /**
+             * New Password
+             * @example a-long-passphrase-1
+             */
+            new_password: string;
+            /**
+             * Token
+             * @description The opaque token from the reset link.
+             */
+            token: string;
+        };
+        /**
+         * PasswordResetRequest
+         * @description `POST /auth/password-reset/request`.
+         *
+         *     Always answered with 202 whether or not the address is registered: a differing response
+         *     would be an account-enumeration oracle.
+         */
+        PasswordResetRequest: {
+            /**
+             * Email
+             * Format: email
+             * @example coordinator@fm-demo.ae
+             */
+            email: string;
+        };
+        /**
+         * PortalStats
+         * @description Hero counters for the landing page. Published listings only.
+         */
+        PortalStats: {
+            /**
+             * Active Categories
+             * @description Distinct categories with at least one published listing.
+             */
+            active_categories: number;
+            /**
+             * Buying Organisations
+             * @description Distinct organisations with at least one published listing.
+             */
+            buying_organisations: number;
+            /**
+             * Currency
+             * @description Currency `total_published_value` is expressed in.
+             * @default AED
+             */
+            currency: string;
+            /** Published Listings */
+            published_listings: number;
+            /**
+             * Total Published Value
+             * @description Sum of the disclosed maximum budget across published listings. Listings that do not disclose a budget contribute nothing rather than an estimate.
+             */
+            total_published_value: string;
         };
         /**
          * ProblemDetail
@@ -1473,6 +3106,8 @@ export interface components {
         };
         /** RegisterRequest */
         RegisterRequest: {
+            /** @description Which side of the marketplace this account is on. Fixed at registration and never changed: an account's listings and applications would be meaningless if its side could flip underneath them. */
+            account_type: components["schemas"]["AccountType"];
             /**
              * Display Name
              * @example Tender Coordinator
@@ -1484,6 +3119,8 @@ export interface components {
              * @example coordinator@fm-demo.ae
              */
             email: string;
+            /** @description Required. The account and its organisation are created in one transaction, so a user can never exist without the identity every listing card and applicant row has to render. */
+            organisation: components["schemas"]["OrganisationCreate"];
             /**
              * Password
              * @example a-long-passphrase-1
@@ -1491,11 +3128,30 @@ export interface components {
             password: string;
         };
         /**
+         * RequiredDocumentType
+         * @description The checklist a buyer builds a listing's document requirements from.
+         *
+         *     A controlled list — not free text — because screening matches an uploaded file against
+         *     these keys. A buyer inventing "Trade Licence (copy)" would produce a requirement no
+         *     classifier can ever satisfy, and every vendor would score as missing it.
+         * @enum {string}
+         */
+        RequiredDocumentType: "trade_licence" | "commercial_registration" | "vat_tax_certificate" | "establishment_card" | "authorised_signatory" | "company_profile" | "audited_financials" | "bank_reference_letter" | "bid_bond" | "performance_guarantee" | "insurance_certificate" | "iso_certification" | "hse_plan" | "quality_plan" | "technical_proposal" | "commercial_proposal" | "method_statement" | "project_schedule" | "staff_cvs" | "organisation_chart" | "equipment_list" | "past_project_references" | "client_testimonial" | "other";
+        /**
          * RequirementCategory
          * @description Requirement taxonomy (`docs/01_PRODUCT_REQUIREMENTS.md` §5).
          * @enum {string}
          */
         RequirementCategory: "legal_registration" | "certification" | "technical_capability" | "experience" | "staffing" | "financial" | "insurance" | "bid_bond_guarantee" | "submission_instruction" | "deadline" | "commercial" | "contractual" | "health_safety_environment" | "data_cybersecurity" | "other";
+        /**
+         * RequirementChecklistWrite
+         * @description `PUT /listings/{id}/requirements` — the whole checklist, replaced wholesale.
+         *
+         *     A bare array rather than an object because the list *is* the checklist: partial edits
+         *     would need per-row identity, and replacing the set outright is both simpler to reason
+         *     about and the only way to express "this requirement is gone".
+         */
+        RequirementChecklistWrite: components["schemas"]["DocumentRequirementWrite"][];
         /**
          * RequirementObligation
          * @enum {string}
@@ -1607,6 +3263,168 @@ export interface components {
          */
         RiskType: "liquidated_damages" | "indemnity_liability" | "termination" | "payment_terms" | "performance_guarantee" | "bid_bond" | "insurance" | "data_privacy" | "intellectual_property" | "unclear_scope" | "aggressive_deadline" | "other";
         /**
+         * ScreeningRead
+         * @description The vendor's full screening result, polled while `pending` or `processing`.
+         *
+         *     There is no progress percentage: the status is the real pipeline state, and a fabricated
+         *     number would be a lie the vendor cannot check (`CLAUDE.md`).
+         */
+        ScreeningRead: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Documents Processed */
+            documents_processed: number;
+            /** @description Safe, machine-readable failure reason. Detail stays in the logs. */
+            error_code: components["schemas"]["AnalysisErrorCode"] | null;
+            /** Findings */
+            findings: components["schemas"]["FindingRead"][];
+            /** Has Blocking Gap */
+            has_blocking_gap: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mandatory Met */
+            mandatory_met: number;
+            /** Mandatory Total */
+            mandatory_total: number;
+            /** Optional Met */
+            optional_met: number;
+            /** Optional Total */
+            optional_total: number;
+            /**
+             * Overall Score
+             * @description 0-100, computed in Python from the findings below. Null until the run completes — a partial score would read as a real result.
+             */
+            overall_score: number | null;
+            /** Pages Extracted */
+            pages_extracted: number;
+            /**
+             * Pages Needing Ocr
+             * @description Pages with no readable text layer that OCR could not recover. Reported as "could not be read", never as a missing document.
+             */
+            pages_needing_ocr: number;
+            /**
+             * Scoring Version
+             * @description Which scoring rules produced this result, for reproducibility.
+             */
+            scoring_version: string;
+            /** Started At */
+            started_at: string | null;
+            status: components["schemas"]["ScreeningStatus"];
+            /**
+             * Summary
+             * @description Advisory narrative generated from the validated findings, never from raw document text.
+             */
+            summary: string | null;
+        };
+        /**
+         * ScreeningStatus
+         * @description Where a submission sits in the document-screening pipeline.
+         *
+         *     Mirrors `AnalysisStatus` rather than reusing it: the two pipelines fail for different
+         *     reasons and are polled by different dashboards, and a shared vocabulary would force one
+         *     to carry states the other can never enter.
+         * @enum {string}
+         */
+        ScreeningStatus: "pending" | "processing" | "completed" | "failed";
+        /**
+         * ScreeningSummary
+         * @description The compact form embedded in an applicant row or a vendor's application.
+         *
+         *     Enough to rank and to spot a blocking gap; the findings themselves come from
+         *     `GET /applications/{id}/screening`.
+         */
+        ScreeningSummary: {
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Has Blocking Gap
+             * @description True when a mandatory requirement is unmet. The score is still shown: a buyer is entitled to see that an otherwise strong bid is missing one certificate.
+             */
+            has_blocking_gap: boolean;
+            /** Mandatory Met */
+            mandatory_met: number;
+            /** Mandatory Total */
+            mandatory_total: number;
+            /**
+             * Overall Score
+             * @description Null until the run completes. Computed in Python.
+             */
+            overall_score: number | null;
+            status: components["schemas"]["ScreeningStatus"];
+        };
+        /**
+         * SearchInterpretation
+         * @description What the query was understood to mean.
+         *
+         *     `extra="forbid"` because this doubles as the structured output contract the provider must
+         *     return: an unknown key is a malformed completion, not something to guess at. Every field
+         *     is optional — a query that says nothing about budget must not cause the model to invent
+         *     one.
+         */
+        SearchInterpretation: {
+            /** Budget Max */
+            budget_max?: string | null;
+            /** Budget Min */
+            budget_min?: string | null;
+            /** Categories */
+            categories?: components["schemas"]["TenderCategory"][];
+            /** Emirates */
+            emirates?: components["schemas"]["Emirate"][];
+            /** Keywords */
+            keywords?: string[];
+        };
+        /**
+         * SearchMatch
+         * @description One ranked listing, with the reasons Python scored it where it did.
+         */
+        SearchMatch: {
+            listing: components["schemas"]["ListingCard"];
+            /**
+             * Reasons
+             * @description Why this listing matched, e.g. "category: Facilities Management".
+             */
+            reasons?: string[];
+            /**
+             * Score
+             * @description Deterministic relevance score computed in Python from the interpretation. Comparable within one response only.
+             */
+            score: number;
+        };
+        /** SearchRequest */
+        SearchRequest: {
+            /**
+             * Limit
+             * @description Maximum matches to return. Omit to use the server's configured maximum; a larger value is clamped to it.
+             */
+            limit?: number | null;
+            /**
+             * Query
+             * @description Plain language, e.g. "we do MEP fit-out in Sharjah, about 30 staff". Treated as untrusted evidence, never as instructions.
+             * @example we do MEP fit-out in Sharjah, about 30 staff
+             */
+            query: string;
+        };
+        /** SearchResponse */
+        SearchResponse: {
+            /**
+             * Degraded
+             * @description True when no language model ran and the interpretation came from plain text processing. Search still works; it is simply less clever, and the UI says so rather than pretending a model answered.
+             */
+            degraded: boolean;
+            /** @description What the query was understood to mean, so the user can correct it. */
+            interpretation: components["schemas"]["SearchInterpretation"];
+            /** Matches */
+            matches: components["schemas"]["SearchMatch"][];
+        };
+        /**
          * SessionRead
          * @description A live refresh session, so a user can see where they are signed in.
          */
@@ -1629,6 +3447,16 @@ export interface components {
             /** User Agent */
             user_agent: string | null;
         };
+        /**
+         * TenderCategory
+         * @description Procurement categories a listing can be filed under.
+         *
+         *     Deliberately broad and flat rather than a nested taxonomy: a single-select category that a
+         *     buyer picks correctly is worth more than a hierarchy they pick wrongly. Sector nuance lives
+         *     in the free-text `industry` and the tag array, both of which are searchable.
+         * @enum {string}
+         */
+        TenderCategory: "construction_civil_works" | "roads_infrastructure" | "water_wastewater" | "electrical_power" | "oil_gas_petrochemical" | "renewable_energy" | "facilities_management" | "cleaning_waste_management" | "landscaping_irrigation" | "it_software" | "cybersecurity" | "cloud_data_centre" | "telecommunications" | "ai_data_analytics" | "healthcare_medical" | "education_training" | "transport_logistics" | "fleet_vehicles" | "security_services" | "catering_hospitality" | "printing_media" | "marketing_events" | "consulting_advisory" | "legal_services" | "financial_audit" | "hr_recruitment" | "furniture_fitout" | "laboratory_scientific" | "defence_aerospace" | "environmental_services";
         /** TenderCreate */
         TenderCreate: {
             /** Buyer */
@@ -1727,6 +3555,7 @@ export interface components {
         };
         /** UserRead */
         UserRead: {
+            account_type: components["schemas"]["AccountType"];
             /**
              * Created At
              * Format: date-time
@@ -1746,6 +3575,7 @@ export interface components {
             id: string;
             /** Is Active */
             is_active: boolean;
+            organisation?: components["schemas"]["OrganisationSummary"] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1759,6 +3589,60 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VendorStats
+         * @description `GET /applications/stats` — the vendor dashboard's counters (`docs/09` §6).
+         *
+         *     Applications missing a figure are excluded from that figure's aggregate and counted in
+         *     `incomplete_financials`, so a partly-filled dashboard is visibly partial rather than
+         *     quietly wrong.
+         */
+        VendorStats: {
+            /** Approved */
+            approved: number;
+            /** Draft */
+            draft: number;
+            /**
+             * Incomplete Financials
+             * @description Approved applications missing a bid amount or an estimated cost, and so excluded from the money figures above.
+             */
+            incomplete_financials: number;
+            /**
+             * Margin Percentage
+             * @description `total_margin / total_bid_value` as a fraction — 0.18 means 18%. Null when the denominator is zero.
+             */
+            margin_percentage: number | null;
+            /** Rejected */
+            rejected: number;
+            /** Shortlisted */
+            shortlisted: number;
+            /** Submitted */
+            submitted: number;
+            /**
+             * Total Bid Value
+             * @description Sum of `bid_amount` over approved applications.
+             */
+            total_bid_value: string;
+            /**
+             * Total Margin
+             * @description Sum of `bid_amount - estimated_cost` over approved applications where both figures are present. Can be negative.
+             */
+            total_margin: string;
+            /** Under Review */
+            under_review: number;
+            /**
+             * Waiting
+             * @description Applications still awaiting a buyer decision: submitted, under review, or shortlisted.
+             */
+            waiting: number;
+            /**
+             * Win Rate
+             * @description approved / (approved + rejected), as a fraction. Null when nothing has been decided yet — a rate over no decisions is not zero, it is unknown.
+             */
+            win_rate: number | null;
+            /** Withdrawn */
+            withdrawn: number;
         };
         /**
          * VerificationStatus
@@ -2148,6 +4032,772 @@ export interface operations {
             };
         };
     };
+    list_applications_api_v1_applications_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ApplicationStatus"] | null;
+                /** @description Rows per page. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ApplicationSummary_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_application_api_v1_applications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_application_stats_api_v1_applications_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorStats"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_application_api_v1_applications__application_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_application_api_v1_applications__application_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_application_api_v1_applications__application_id__decision_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicantRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_application_document_api_v1_applications__application_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_application_document_api_v1_applications__application_id__documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDocumentRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    delete_application_document_api_v1_applications__application_id__documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+                /** @description Application document identifier. */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_applicant_api_v1_applications__application_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicantRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_application_screening_api_v1_applications__application_id__screening_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreeningRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_application_api_v1_applications__application_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    withdraw_application_api_v1_applications__application_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Application identifier. */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
@@ -2295,6 +4945,88 @@ export interface operations {
             };
         };
     };
+    confirm_password_reset_api_v1_auth_password_reset_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_password_reset_api_v1_auth_password_reset_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     refresh_api_v1_auth_refresh_post: {
         parameters: {
             query?: never;
@@ -2364,13 +5096,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
             /** @description Too Many Requests */
@@ -3325,6 +6057,917 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    list_listings_api_v1_listings_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ListingStatus"] | null;
+                /** @description Rows per page. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ListingDetail_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_listing_api_v1_listings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_listing_api_v1_listings__listing_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_listing_api_v1_listings__listing_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    list_applicants_api_v1_listings__listing_id__applications_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ApplicationStatus"] | null;
+                /** @description Rows per page. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ApplicantRead_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_listing_api_v1_listings__listing_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_listing_api_v1_listings__listing_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    replace_requirements_api_v1_listings__listing_id__requirements_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementChecklistWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRequirementRead"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                /** @description Return only unread notifications. */
+                unread_only?: boolean;
+                /** @description Rows per page. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_NotificationRead_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notification_counts_api_v1_notifications_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationCounts"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    mark_all_read_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    mark_notification_read_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Notification identifier. */
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_organisation_api_v1_organisation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganisationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    update_organisation_api_v1_organisation_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganisationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganisationRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    list_categories_api_v1_public_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CategoryCount_"];
+                };
+            };
+        };
+    };
+    list_public_listings_api_v1_public_listings_get: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["TenderCategory"] | null;
+                emirate?: components["schemas"]["Emirate"] | null;
+                /** @description Free text. */
+                q?: string | null;
+                budget_min?: number | string | null;
+                budget_max?: number | string | null;
+                closing_within_days?: number | null;
+                sort?: components["schemas"]["ListingSort"];
+                /** @description Rows per page. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ListingCard_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_listing_api_v1_public_listings__listing_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Listing identifier. */
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_listings_api_v1_public_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_portal_stats_api_v1_public_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalStats"];
                 };
             };
         };
