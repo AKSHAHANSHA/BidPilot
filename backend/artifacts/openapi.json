@@ -8569,6 +8569,56 @@
         ]
       }
     },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "description": "Demo stub. Real email delivery is not wired up. Always returns 202 with a generic message, whether or not the address is registered, so an attacker cannot use this endpoint to enumerate accounts. The reset flow is future work.",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Forgot Password Api V1 Auth Forgot Password Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request a password reset link (stub)",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "description": "Returns a short-lived access token and sets an HttpOnly refresh cookie. A failed attempt always returns the same message, whether or not the account exists.",

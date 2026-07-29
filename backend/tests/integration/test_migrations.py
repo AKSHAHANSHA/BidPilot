@@ -19,7 +19,7 @@ from tests.integration.conftest import alembic_config
 
 pytestmark = pytest.mark.integration
 
-EXPECTED_HEAD = "0010"
+EXPECTED_HEAD = "0012"
 EXPECTED_TABLES = (
     "users",
     "refresh_sessions",
@@ -37,11 +37,18 @@ EXPECTED_TABLES = (
     "risk_findings",
     "risk_citations",
     "readiness_assessments",
-    # 0010 — marketplace layer.
-    "vendor_profiles",
-    "market_projects",
+    # 0010 — the portal marketplace.
+    "organisations",
+    "tender_listings",
+    "listing_document_requirements",
     "applications",
+    "application_documents",
+    "application_screenings",
+    "screening_findings",
     "notifications",
+    "password_reset_tokens",
+    # 0012 — the accreditation register screening checks certificates against.
+    "certificate_registry",
 )
 
 
@@ -126,12 +133,15 @@ async def test_upgrade_is_repeatable_after_downgrade() -> None:
 async def test_single_step_downgrade_removes_only_the_latest_tables() -> None:
     await upgrade()
     await downgrade("-1")
-    assert await read_revision() == "0009"
-    # 0010's tables are gone; every earlier phase's remains.
-    assert await table_exists("applications") is False
-    assert await table_exists("market_projects") is False
-    assert await table_exists("vendor_profiles") is False
-    assert await table_exists("notifications") is False
+    assert await read_revision() == "0011"
+    # 0012 owns exactly one table. The marketplace tables belong to 0010 and must survive a
+    # single step back — a downgrade that took them too would mean 0012 was doing more than
+    # its message claims.
+    assert await table_exists("certificate_registry") is False
+    assert await table_exists("applications") is True
+    assert await table_exists("tender_listings") is True
+    assert await table_exists("organisations") is True
+    assert await table_exists("notifications") is True
     assert await table_exists("readiness_assessments") is True
     assert await table_exists("risk_findings") is True
     assert await table_exists("requirements") is True
