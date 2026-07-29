@@ -1,12 +1,19 @@
 # BidPilot UAE
 
-**Know whether to bid before spending days preparing.**
+**A two-sided tender marketplace with AI document screening.**
 
-BidPilot turns an unstructured tender PDF into a reviewable decision workspace. It extracts
-requirements with page-level citations, verifies each citation against the source page,
-compares requirements against approved company evidence, calculates a transparent
-bid-readiness score in Python, and produces a cited advisory recommendation that a human can
-override.
+Buying organisations publish tenders and set the document checklist a bid must satisfy.
+Vendors browse the catalogue, describe their company in plain language to find matching work,
+and apply. Every submission is read — text layer first, OCR for scanned pages — matched
+against the buyer's checklist with a page and a quote for each match, and scored in Python.
+The vendor sees what is missing while there is still time to fix it; the buyer sees applicants
+ranked by what they actually supplied.
+
+Underneath is the original analysis workspace, still intact: it turns an unstructured tender
+PDF into a reviewable decision workspace, extracting requirements with page-level citations,
+verifying each citation against the source page, comparing requirements against approved
+company evidence, calculating a transparent bid-readiness score in Python, and producing a
+cited advisory recommendation that a human can override.
 
 Built as a production-minded personal portfolio project: a modular monolith, reliable under
 malformed model output, explainable end to end, and operable by one developer.
@@ -36,6 +43,75 @@ working until its verification commands have been run.
 | 10 | Frontend (React 19 / TS / Vite / Tailwind v4): auth, tender desk, command center, company + evidence/project CRUD, export | **Complete** |
 | 11 | Gold-set evaluation, demo-reset, Playwright journey, matcher fix | **Complete** |
 | 12 | Deployment configuration and docs (Vercel + Render + Neon + Upstash) | **Config ready, not deployed** |
+| 13 | Marketplace portal: account types, listings, applications, OCR screening, notifications, public landing page | **Complete** |
+
+---
+
+## The marketplace portal
+
+Specified in `docs/09_PORTAL_SPEC.md`, which is authoritative for anything below.
+
+**Two account types, fixed at registration.** A `company` publishes tenders and reviews
+applicants; a `vendor` browses and applies. The side is immutable — an account's listings and
+applications would be meaningless if it could flip — and registration creates the user and its
+`Organisation` in one transaction, so no account exists without the identity every listing card
+and applicant row has to render.
+
+**A public catalogue.** The landing page, the tender list and the category taxonomy are served
+without authentication. 30 procurement categories, filters for emirate, contract value and
+closing window, and a natural-language search bar: describe your company and it returns ranked
+matches. The language model only *interprets* the query into categories, emirates and keywords —
+a schema-constrained, `extra="forbid"` structure — and deterministic Python does the ranking, so
+the model can never invent a listing. With no API key configured the interpretation falls back
+to keyword extraction and the response is flagged `degraded`, so the UI says plainly that no
+model ran rather than implying one did.
+
+**Document screening.** A vendor uploads their submission and the worker runs seven committed
+stages: validate, extract text, OCR the pages with no text layer, classify each upload against
+the buyer's checklist, verify every proposed quote against the page it claims to come from,
+score, complete. A quote that does not verify demotes its finding to *missing*. Pages that
+cannot be read are counted and reported as unreadable — never as missing, because absence in a
+submission is not proof the document does not exist.
+
+**The score is arithmetic.** `app/domain/screening.py` is pure Python over dataclasses:
+
+```
+score = round(100 × (0.8 × mandatory_ratio + 0.2 × optional_ratio))
+```
+
+A supplied-but-expired document earns half its weight, an unreadable one earns nothing but is
+reported separately, and `not_applicable` leaves both sides of the ratio. A checklist with
+nothing to assess scores `None`, never `0`. The model proposes matches; it never produces the
+number.
+
+**OCR** is `app/documents/ocr.py` — a structural `OcrEngine` protocol with a Tesseract
+implementation and a null default. It is off unless `OCR_ENABLED=true` *and* the binary is on
+`PATH`; when unavailable, pages are counted in `pages_needing_ocr` rather than assumed blank.
+
+**Certificates are verified, not taken on trust.** Anyone can type a number onto a PDF, so an
+ISO certificate is worth what the issuing register says about it. Screening reads the
+certificate number out of the uploaded document and looks it up in `certificate_registry`:
+
+| Register says | Verdict | Credit |
+| --- | --- | --- |
+| Found, active, in date | `present` | full |
+| Found, past its expiry date | `present_expired` | half |
+| Found, suspended or withdrawn | `present_unverified` | **none** |
+| Number not in the register | `present_unverified` | **none** |
+| No number readable in the document | `present_unverified` | **none** |
+
+So a submission carrying a fabricated or unlisted certificate number scores strictly lower than
+one carrying a registered number — which is the point. `present_unverified` stays a distinct
+verdict rather than collapsing into `missing`, because the vendor did upload a file and telling
+them otherwise would send them looking for a document they already sent; the finding's note
+names the number that was checked and why it failed. The rules are in
+`app/domain/certificates.py`, which is pure and has no database dependency.
+
+**Demo data.** `python scripts/seed_portal.py` builds a browsable marketplace: 6 buying
+organisations, 3 vendors, 39 published tenders across all 30 categories, and 42 applications
+with completed screenings. The screening scores come from the real scorer, and each application
+carries a generated submission PDF, so every evidence citation points at a page that genuinely
+contains the quoted sentence.
 
 ---
 
