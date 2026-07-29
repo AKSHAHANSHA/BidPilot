@@ -12,9 +12,9 @@ const EXAMPLE_QUERIES = [
 
 interface HeroStats {
   published_listings?: number;
-  buyer_count?: number;
-  total_value?: string | number | null;
-  category_count?: number;
+  buying_organisations?: number;
+  total_published_value?: string | number | null;
+  active_categories?: number;
 }
 
 /**
@@ -149,9 +149,9 @@ export function Hero({
         <Reveal delay={400}>
           <dl className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-portal-line bg-portal-line sm:grid-cols-4">
             <Stat label="Open tenders" value={stats.published_listings} />
-            <Stat label="Buying bodies" value={stats.buyer_count} />
-            <Stat label="Categories" value={stats.category_count} />
-            <Stat label="Published value" value={stats.total_value} money />
+            <Stat label="Buying bodies" value={stats.buying_organisations} />
+            <Stat label="Categories" value={stats.active_categories} />
+            <Stat label="Published value" value={stats.total_published_value} money />
           </dl>
         </Reveal>
       ) : null}

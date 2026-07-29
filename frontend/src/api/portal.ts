@@ -89,9 +89,10 @@ export interface CategoryCount {
 
 export interface PortalStats {
   published_listings: number;
-  buyer_count: number;
-  total_value?: string | null;
-  category_count: number;
+  buying_organisations: number;
+  total_published_value?: string | null;
+  currency?: string;
+  active_categories: number;
 }
 
 export interface SearchInterpretation {
@@ -334,7 +335,10 @@ export const portal = {
   listing: (listingId: string) =>
     publicGet<ListingDetail>(`/api/v1/public/listings/${listingId}`),
 
-  categories: () => publicGet<CategoryCount[]>("/api/v1/public/categories"),
+  // The endpoint returns the standard `Page` envelope, not a bare array. Unwrapping it here
+  // means every caller works with the list it actually wants.
+  categories: async () =>
+    (await publicGet<Page<CategoryCount>>("/api/v1/public/categories")).items,
 
   stats: () => publicGet<PortalStats>("/api/v1/public/stats"),
 
